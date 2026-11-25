@@ -7,16 +7,16 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,300..700;1,300..700&family=JetBrains+Mono:wght@300;400;500;600;700&family=Titillium+Web:ital,wght@0,200;0,300;0,400;0,600;0,700;0,900;1,200;1,300;1,400;1,600;1,700&display=swap" rel="stylesheet">
 </head>
 <body>
     <!-- Background -->
     <div class="bg-image"></div>
     <div class="bg-overlay"></div>
 
-    <!-- Sticky Navigation -->
-    <header class="sticky-nav">
-        <nav class="navbar container">
+    <!-- Seamless Sticky Navigation -->
+    <nav class="sticky-nav">
+        <div class="navbar container-wide">
             <div class="nav-left">
                 <a href="/" class="nav-logo">~/</a>
                 <span class="nav-cursor">▌</span>
@@ -27,11 +27,12 @@
                 <a href="#blog" class="nav-link">Blog</a>
                 <a href="#contact" class="nav-link">Contact</a>
             </div>
-        </nav>
-    </header>
+        </div>
+    </nav>
 
-    <!-- Main Container -->
-    <div class="container main-content">
+    <!-- Scrollable content wrapper with top fade mask -->
+    <div class="scroll-fade-wrapper">
+        <div class="container main-content">
         <!-- Hero Section -->
         <section class="hero">
             <h1 class="hero-title">
@@ -102,6 +103,98 @@
             </div>
         </section>
 
+        <!-- Work Experience & Education Tabs -->
+        <section class="career-section" id="experience">
+            <div class="career-tabs" role="tablist" aria-label="Work Experience and Education">
+                <button
+                    class="career-tab active"
+                    role="tab"
+                    aria-selected="true"
+                    aria-controls="tab-work"
+                    id="btn-work"
+                    data-tab="work"
+                    type="button"
+                >Work Experience</button>
+                <button
+                    class="career-tab"
+                    role="tab"
+                    aria-selected="false"
+                    aria-controls="tab-education"
+                    id="btn-education"
+                    data-tab="education"
+                    type="button"
+                >Education</button>
+            </div>
+
+            <div class="career-card">
+                <div class="career-panel active" id="tab-work" role="tabpanel" aria-labelledby="btn-work">
+                    <div class="career-entry">
+                        <div class="career-entry-header">
+                            <div>
+                                <h3 class="career-role">Backend Engineer</h3>
+                                <p class="career-org">Freelance</p>
+                            </div>
+                            <span class="career-period">2025 — Present</span>
+                        </div>
+                        <p class="career-desc">
+                            Designing and building scalable REST and GraphQL APIs, distributed Redis caching layers, and containerized backend services.
+                        </p>
+                    </div>
+                    <div class="career-entry">
+                        <div class="career-entry-header">
+                            <div>
+                                <h3 class="career-role">Backend Engineer</h3>
+                                <p class="career-org">Acme Corp</p>
+                            </div>
+                            <span class="career-period">2024 — 2025</span>
+                        </div>
+                        <p class="career-desc">
+                            Built Go and Node.js microservices, tuned PostgreSQL queries for high-throughput workloads, and automated CI/CD pipelines.
+                        </p>
+                    </div>
+                    <div class="career-entry">
+                        <div class="career-entry-header">
+                            <div>
+                                <h3 class="career-role">Software Engineer Intern</h3>
+                                <p class="career-org">DevX Labs</p>
+                            </div>
+                            <span class="career-period">2023 — 2024</span>
+                        </div>
+                        <p class="career-desc">
+                            Developed internal developer tooling, Redis-backed background job queues, and service health monitoring dashboards.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="career-panel" id="tab-education" role="tabpanel" aria-labelledby="btn-education" hidden>
+                    <div class="career-entry">
+                        <div class="career-entry-header">
+                            <div>
+                                <h3 class="career-role">B.Tech in Computer Science</h3>
+                                <p class="career-org">University</p>
+                            </div>
+                            <span class="career-period">2020 — 2024</span>
+                        </div>
+                        <p class="career-desc">
+                            Coursework in distributed systems, database management systems, operating systems, data structures, and computer networks.
+                        </p>
+                    </div>
+                    <div class="career-entry">
+                        <div class="career-entry-header">
+                            <div>
+                                <h3 class="career-role">Systems &amp; Cloud Engineering</h3>
+                                <p class="career-org">Self-Directed / Certifications</p>
+                            </div>
+                            <span class="career-period">Ongoing</span>
+                        </div>
+                        <p class="career-desc">
+                            Focused study on Go concurrency patterns, PostgreSQL internals, Docker, Kubernetes, and observability at scale.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- Featured Projects -->
         <section class="featured-projects" id="projects">
             <div class="section-header">
@@ -139,7 +232,6 @@
                             out of the box.
                         </p>
                         <div class="project-tags">
-                            <span class="tag-icon">🏷</span>
                             <span class="tag">node.js</span>
                             <span class="tag">typescript</span>
                             <span class="tag">cli</span>
@@ -176,7 +268,6 @@
                             monitoring dashboards.
                         </p>
                         <div class="project-tags">
-                            <span class="tag-icon">🏷</span>
                             <span class="tag">golang</span>
                             <span class="tag">redis</span>
                             <span class="tag">docker</span>
@@ -192,7 +283,7 @@
             <!-- Tech Stack -->
             <div class="info-card tech-card">
                 <h3 class="info-card-title">
-                    <span class="card-icon">⚙</span> Tech Stack
+                    Tech Stack
                 </h3>
                 <div class="tech-tags">
                     <span class="tech-tag">Node.js</span>
@@ -213,18 +304,18 @@
             <!-- Let's Connect -->
             <div class="info-card connect-card">
                 <h3 class="info-card-title">
-                    <span class="card-icon">💬</span> Let's Connect
+                    Let's Connect
                 </h3>
                 <p class="connect-text">Always open to interesting projects and conversations.</p>
                 <a href="mailto:abhijeet@example.com" class="connect-btn">
-                    <span>✉</span> Send an Email
+                    Send an Email
                 </a>
             </div>
 
             <!-- Currently Based In -->
             <div class="info-card location-card">
                 <h3 class="info-card-title">
-                    <span class="card-icon">📍</span> Currently Based In
+                    Currently Based In
                 </h3>
                 <div class="location-map">
                     <div class="map-placeholder">
@@ -254,7 +345,7 @@
             <div class="info-card posts-card">
                 <div class="posts-header">
                     <h3 class="info-card-title">
-                        <span class="card-icon">📝</span> Latest Posts
+                        Latest Posts
                     </h3>
                     <a href="#" class="posts-external">↗</a>
                 </div>
@@ -285,31 +376,21 @@
             <div class="info-card github-card">
                 <div class="posts-header">
                     <h3 class="info-card-title">
-                        <span class="card-icon">⚡</span> GitHub Activity
+                        GitHub Activity
                     </h3>
                     <a href="#" class="posts-external">[info]</a>
                 </div>
-                <div class="github-activity">
+                <div class="github-activity" id="github-activity">
                     <div class="commit-item">
-                        <span class="commit-repo">api-forge:</span>
-                        <span class="commit-msg">feat: add JWT refresh token r...</span>
-                        <span class="commit-stats"><span class="additions">+305</span> / <span class="deletions">-23</span></span>
-                    </div>
-                    <div class="commit-item">
-                        <span class="commit-repo">cache-storm:</span>
-                        <span class="commit-msg">fix: resolve race condition in...</span>
-                        <span class="commit-stats"><span class="additions">+41</span> / <span class="deletions">-8</span></span>
-                    </div>
-                    <div class="commit-item">
-                        <span class="commit-repo">dotfiles:</span>
-                        <span class="commit-msg">chore: update neovim config</span>
-                        <span class="commit-stats"><span class="additions">+12</span> / <span class="deletions">-5</span></span>
+                        <span class="commit-repo">ay_x:</span>
+                        <span class="commit-msg">edit home page 01</span>
+                        <span class="commit-stats"><span class="commit-sha">7d5fa40</span></span>
                     </div>
                 </div>
-                <a href="https://github.com" class="github-link" target="_blank" rel="noopener">
+                <a href="https://github.com/abhijeetydv" class="github-link" target="_blank" rel="noopener">
                     View on GitHub ↗
                 </a>
-                <div class="contrib-graph">
+                <div class="contrib-graph" id="contrib-graph">
                     <div class="contrib-bar" style="width: 20%; background: #94e2d5;"></div>
                     <div class="contrib-bar" style="width: 35%; background: #89dceb;"></div>
                     <div class="contrib-bar" style="width: 15%; background: #74c7ec;"></div>
@@ -319,12 +400,12 @@
                 </div>
             </div>
         </section>
+        </div>
 
-    </div>
-
-    <!-- Sticky Footer -->
-    <footer class="sticky-footer">
-        <div class="footer-inner container">
+        <!-- Footer Panel -->
+        <div class="container-wide">
+            <footer class="footer-panel">
+                <div class="footer-inner">
             <div class="footer-left">
                 <span>© 2026 Abhijeet</span>
                 <span class="footer-sep">-</span>
@@ -339,10 +420,10 @@
                     <span id="footer-time"></span>
                 </span>
                 <span class="footer-sep">·</span>
-                <span class="footer-commit">
+                <a href="https://github.com/abhijeetydv/ay_x/commit/7d5fa40" target="_blank" rel="noopener" class="footer-commit" id="footer-commit" title="Latest commit">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="1.05" y1="12" x2="7" y2="12"/><line x1="17.01" y1="12" x2="22.96" y2="12"/></svg>
-                    <span>3fec26f</span>
-                </span>
+                    <span id="footer-commit-sha">7d5fa40</span>
+                </a>
                 <span class="footer-sep">·</span>
                 <div class="footer-socials">
                     <a href="https://github.com" target="_blank" rel="noopener" aria-label="GitHub">
@@ -359,8 +440,9 @@
                     </a>
                 </div>
             </div>
+            </footer>
         </div>
-    </footer>
+    </div>
 
     <script src="script.js"></script>
 </body>
