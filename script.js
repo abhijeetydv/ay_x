@@ -16,18 +16,20 @@ const CONFIG_TIMEZONE = ((document.body && document.body.dataset.timezone) || ''
 
 // --- Live Clock ---
 function initClock() {
-    if (!CONFIG_TIMEZONE) return;
+    const el = document.getElementById('current-time');
+    if (!el || !CONFIG_TIMEZONE) return;
 
     function updateTime() {
-        const now = new Date();
-        const ist = new Date(now.toLocaleString('en-US', { timeZone: CONFIG_TIMEZONE }));
-        const hours = String(ist.getHours()).padStart(2, '0');
-        const minutes = String(ist.getMinutes()).padStart(2, '0');
-        const seconds = String(ist.getSeconds()).padStart(2, '0');
-        const timeStr = `${hours}:${minutes}:${seconds}`;
-
-        const el = document.getElementById('current-time');
-        if (el) el.textContent = timeStr;
+        try {
+            const now = new Date();
+            const ist = new Date(now.toLocaleString('en-US', { timeZone: CONFIG_TIMEZONE }));
+            const hours = String(ist.getHours()).padStart(2, '0');
+            const minutes = String(ist.getMinutes()).padStart(2, '0');
+            const seconds = String(ist.getSeconds()).padStart(2, '0');
+            el.textContent = `${hours}:${minutes}:${seconds}`;
+        } catch {
+            // Keep existing text if timezone is invalid
+        }
     }
 
     updateTime();
@@ -36,17 +38,20 @@ function initClock() {
 
 // --- Footer Live Clock ---
 function initFooterClock() {
-    if (!CONFIG_TIMEZONE) return;
+    const el = document.getElementById('footer-time');
+    if (!el || !CONFIG_TIMEZONE) return;
 
     function updateFooterTime() {
-        const now = new Date();
-        const ist = new Date(now.toLocaleString('en-US', { timeZone: CONFIG_TIMEZONE }));
-        const hours = String(ist.getHours()).padStart(2, '0');
-        const minutes = String(ist.getMinutes()).padStart(2, '0');
-        const seconds = String(ist.getSeconds()).padStart(2, '0');
-
-        const el = document.getElementById('footer-time');
-        if (el) el.textContent = `${hours}:${minutes}:${seconds}`;
+        try {
+            const now = new Date();
+            const ist = new Date(now.toLocaleString('en-US', { timeZone: CONFIG_TIMEZONE }));
+            const hours = String(ist.getHours()).padStart(2, '0');
+            const minutes = String(ist.getMinutes()).padStart(2, '0');
+            const seconds = String(ist.getSeconds()).padStart(2, '0');
+            el.textContent = `${hours}:${minutes}:${seconds}`;
+        } catch {
+            // Keep existing text if timezone is invalid
+        }
     }
 
     updateFooterTime();
@@ -144,10 +149,19 @@ const LANG_COLORS = {
 async function initGitHubData() {
     if (!GITHUB_USER) return;
 
-    const tasks = [fetchRecentActivity()];
-    if (GITHUB_REPO) {
-        tasks.push(fetchLatestRepoCommit(), fetchLanguageBreakdown());
+    const tasks = [];
+    if (document.getElementById('github-activity')) {
+        tasks.push(fetchRecentActivity());
     }
+    if (GITHUB_REPO) {
+        if (document.getElementById('footer-commit-sha') && document.getElementById('footer-commit')) {
+            tasks.push(fetchLatestRepoCommit());
+        }
+        if (document.getElementById('contrib-graph')) {
+            tasks.push(fetchLanguageBreakdown());
+        }
+    }
+    if (tasks.length === 0) return;
     await Promise.all(tasks);
 }
 
