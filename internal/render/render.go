@@ -7,7 +7,9 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
+	"time"
 
 	"portfolio/internal/model"
 )
@@ -78,6 +80,8 @@ func BuildPages(templateDir, rootDir, outDir string, data *model.HomepageData, p
 	if err := os.MkdirAll(outDir, 0o755); err != nil {
 		return fmt.Errorf("creating output directory %s: %w", outDir, err)
 	}
+
+	preparePosts(data)
 
 	for _, p := range pages {
 		title := data.Site.Title
@@ -157,6 +161,47 @@ func writeRobots(outPath, baseURL string) error {
 		return fmt.Errorf("writing %s: %w", outPath, err)
 	}
 	return nil
+}
+
+func preparePosts(data *model.HomepageData) {
+	items := make([]model.PostEntry, len(data.Posts.Items))
+	copy(items, data.Posts.Items)
+
+	dateFormat := data.Posts.Page.DateFormat
+	if dateFormat == "" {
+		dateFormat = "Jan 2, 2006"
+	}
+
+	parsedDates := make(map[string]time.Time, len(items))
+	for i := range items {
+		t, err := time.Parse("2006-01-02", items[i].Date)
+		if err == nil {
+			parsedDates[items[i].Date] = t
+			items[i].FormattedDate = t.Format(dateFormat)
+		} else {
+			items[i].FormattedDate = items[i].Date
+		}
+	}
+
+	sort.SliceStable(items, func(i, j int) bool {
+		ti, oki := parsedDates[items[i].Date]
+		tj, okj := parsedDates[items[j].Date]
+		if oki && okj && !ti.Equal(tj) {
+			return ti.After(tj)
+		}
+		if items[i].Date != items[j].Date {
+			return items[i].Date > items[j].Date
+		}
+		return items[i].ID < items[j].ID
+	})
+
+	data.SortedPosts = items
+	if len(items) > 0 {
+		latest := items[0]
+		data.LatestPost = &latest
+	} else {
+		data.LatestPost = nil
+	}
 }
 
 func resolvePathSegments(data *model.HomepageData, p PageSpec) []string {

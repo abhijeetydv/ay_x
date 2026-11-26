@@ -1,0 +1,51 @@
+page:
+  title: "Posts — Abhijeet"
+  description: "Technical writing on Go, Redis, Docker, backend architecture, and distributed systems by Abhijeet Yadav."
+  heading: "Posts"
+  intro: "Notes on backend engineering, caching, containers, and systems design."
+  back_label: "← Back to home"
+  back_href: "index.html"
+  empty_message: "No posts published yet."
+  date_format: "Jan 2, 2006"
+
+home_tile:
+  title: "Latest Posts"
+  all_posts_label: "All posts →"
+  all_posts_href: "#"
+
+# placeholder - edit me
+items:
+  - id: "building-scalable-apis-with-go"
+    title: "Building Scalable APIs with Go"
+    date: "2026-11-20"
+    summary: "Structuring HTTP services, graceful shutdown, and middleware in Go."
+    url: "#"
+    tags:
+      - "go"
+      - "apis"
+    external: false
+  - id: "redis-caching-patterns-that-scale"
+    title: "Redis Caching Patterns That Scale"
+    date: "2026-10-15"
+    summary: "Cache-aside, stampede prevention, and key expiration strategies."
+    url: "#"
+    tags:
+      - "redis"
+      - "caching"
+    external: false
+  - id: "docker-multi-stage-builds"
+    title: "Docker Multi-Stage Builds"
+    date: "2026-09-08"
+    summary: "Keeping container images small, reproducible, and fast to deploy."
+    url: "#"
+    tags:
+      - "docker"
+    external: false
+  - id: "hello-world"
+    title: "Hello World"
+    date: "2026-08-01"
+    summary: "First note on starting this engineering log."
+    url: "#"
+    tags:
+      - "meta"
+    external: false

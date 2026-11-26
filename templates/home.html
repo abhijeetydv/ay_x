@@ -215,18 +215,18 @@
             <div class="info-card posts-card" id="blog">
                 <div class="posts-header">
                     <h3 class="info-card-title">
-                        {{.About.Posts.Title}}
+                        {{.Posts.HomeTile.Title}}
                     </h3>
-                    {{if .About.Posts.ExternalHref}}
-                    <a href="{{.About.Posts.ExternalHref}}" class="posts-external">↗</a>
+                    {{if .Posts.HomeTile.AllPostsHref}}
+                    <a href="{{.Posts.HomeTile.AllPostsHref}}" class="posts-external">↗</a>
                     {{end}}
                 </div>
                 <div class="posts-list">
-                    {{range .About.Posts.Items}}
-                    <a href="{{.Href}}" class="post-item">
+                    {{range .SortedPosts}}
+                    <a href="{{.URL}}" class="post-item">
                         <span class="post-title">{{.Title}}</span>
                         <span class="post-dots"></span>
-                        <span class="post-date">{{.Date}}</span>
+                        <span class="post-date">{{.FormattedDate}}</span>
                     </a>
                     {{end}}
                 </div>

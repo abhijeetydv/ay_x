@@ -15,23 +15,6 @@ location:
 placeholder_tile:
   enabled: true
 
-posts:
-  title: "Latest Posts"
-  external_href: "#"
-  items:
-    - title: "Building Scalable APIs with Go"
-      href: "#"
-      date: "Nov 20, 2026"
-    - title: "Redis Caching Patterns That Scale"
-      href: "#"
-      date: "Oct 15, 2026"
-    - title: "Docker Multi-Stage Builds"
-      href: "#"
-      date: "Sep 8, 2026"
-    - title: "Hello World"
-      href: "#"
-      date: "Aug 1, 2026"
-
 github_card:
   title: "GitHub Activity"
   info_label: "[info]"

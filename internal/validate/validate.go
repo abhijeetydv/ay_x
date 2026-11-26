@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"portfolio/internal/model"
@@ -46,6 +47,7 @@ func Homepage(data *model.HomepageData) error {
 	validateSkills(&data.Skills, &errs)
 	validateAbout(&data.About, &errs)
 	validateAboutPage(&data.AboutPage, &errs)
+	validatePosts(&data.Posts, &errs)
 	validateFooter(&data.Footer, &errs)
 
 	if len(errs) > 0 {
@@ -293,17 +295,6 @@ func validateAbout(a *model.AboutConfig, errs *[]string) {
 	if strings.TrimSpace(a.Location.MapAlt) == "" {
 		*errs = append(*errs, "about.yaml: location.map_alt is required")
 	}
-	if a.Posts.ExternalHref != "" && !isSafeHref(a.Posts.ExternalHref) {
-		*errs = append(*errs, fmt.Sprintf("about.yaml: posts.external_href %q is invalid", a.Posts.ExternalHref))
-	}
-	for i, post := range a.Posts.Items {
-		if strings.TrimSpace(post.Title) == "" {
-			*errs = append(*errs, fmt.Sprintf("about.yaml: posts.items[%d].title is required", i))
-		}
-		if !isSafeHref(post.Href) {
-			*errs = append(*errs, fmt.Sprintf("about.yaml: posts.items[%d].href %q is invalid", i, post.Href))
-		}
-	}
 	if a.GitHubCard.ViewHref != "" && !isSafeHref(a.GitHubCard.ViewHref) {
 		*errs = append(*errs, fmt.Sprintf("about.yaml: github_card.view_href %q is invalid", a.GitHubCard.ViewHref))
 	}
@@ -355,6 +346,58 @@ func validateAboutPage(a *model.AboutPageConfig, errs *[]string) {
 	}
 	if !isSafeHref(a.ProjectsHref) {
 		*errs = append(*errs, fmt.Sprintf("about_page.yaml: projects_href %q is invalid", a.ProjectsHref))
+	}
+}
+
+func validatePosts(p *model.PostsConfig, errs *[]string) {
+	if strings.TrimSpace(p.Page.Title) == "" {
+		*errs = append(*errs, "posts.yaml: page.title is required")
+	}
+	validateDescription("posts.yaml: page.description", p.Page.Description, errs)
+	if strings.TrimSpace(p.Page.Heading) == "" {
+		*errs = append(*errs, "posts.yaml: page.heading is required")
+	}
+	if strings.TrimSpace(p.Page.Intro) == "" {
+		*errs = append(*errs, "posts.yaml: page.intro is required")
+	}
+	if strings.TrimSpace(p.Page.BackLabel) == "" {
+		*errs = append(*errs, "posts.yaml: page.back_label is required")
+	}
+	if !isSafeHref(p.Page.BackHref) {
+		*errs = append(*errs, fmt.Sprintf("posts.yaml: page.back_href %q is invalid", p.Page.BackHref))
+	}
+	if strings.TrimSpace(p.Page.EmptyMessage) == "" {
+		*errs = append(*errs, "posts.yaml: page.empty_message is required")
+	}
+	if strings.TrimSpace(p.Page.DateFormat) == "" {
+		*errs = append(*errs, "posts.yaml: page.date_format is required")
+	}
+	if strings.TrimSpace(p.HomeTile.Title) == "" {
+		*errs = append(*errs, "posts.yaml: home_tile.title is required")
+	}
+	if strings.TrimSpace(p.HomeTile.AllPostsLabel) == "" {
+		*errs = append(*errs, "posts.yaml: home_tile.all_posts_label is required")
+	}
+	if !isSafeHref(p.HomeTile.AllPostsHref) {
+		*errs = append(*errs, fmt.Sprintf("posts.yaml: home_tile.all_posts_href %q is invalid", p.HomeTile.AllPostsHref))
+	}
+	seenIDs := map[string]bool{}
+	for i, item := range p.Items {
+		if strings.TrimSpace(item.ID) == "" {
+			*errs = append(*errs, fmt.Sprintf("posts.yaml: items[%d].id is required", i))
+		} else if seenIDs[item.ID] {
+			*errs = append(*errs, fmt.Sprintf("posts.yaml: duplicate post id %q", item.ID))
+		}
+		seenIDs[item.ID] = true
+		if strings.TrimSpace(item.Title) == "" {
+			*errs = append(*errs, fmt.Sprintf("posts.yaml: items[%d].title is required", i))
+		}
+		if _, err := time.Parse("2006-01-02", item.Date); err != nil {
+			*errs = append(*errs, fmt.Sprintf("posts.yaml: items[%d].date %q must be YYYY-MM-DD", i, item.Date))
+		}
+		if !isSafeHref(item.URL) {
+			*errs = append(*errs, fmt.Sprintf("posts.yaml: items[%d].url %q is invalid", i, item.URL))
+		}
 	}
 }
 

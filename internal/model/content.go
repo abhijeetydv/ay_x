@@ -165,18 +165,42 @@ type PlaceholderTileConfig struct {
 	Enabled bool `yaml:"enabled"`
 }
 
-// PostItem represents a blog post entry on the homepage.
-type PostItem struct {
-	Title string `yaml:"title"`
-	Href  string `yaml:"href"`
-	Date  string `yaml:"date"`
+// PostsPageConfig configures posts.html metadata and copy.
+type PostsPageConfig struct {
+	Title        string `yaml:"title"`
+	Description  string `yaml:"description"`
+	Heading      string `yaml:"heading"`
+	Intro        string `yaml:"intro"`
+	BackLabel    string `yaml:"back_label"`
+	BackHref     string `yaml:"back_href"`
+	EmptyMessage string `yaml:"empty_message"`
+	DateFormat   string `yaml:"date_format"`
 }
 
-// PostsCardConfig configures the Latest Posts card.
-type PostsCardConfig struct {
-	Title        string     `yaml:"title"`
-	ExternalHref string     `yaml:"external_href"`
-	Items        []PostItem `yaml:"items"`
+// PostsHomeTileConfig configures the home page latest-post tile.
+type PostsHomeTileConfig struct {
+	Title         string `yaml:"title"`
+	AllPostsLabel string `yaml:"all_posts_label"`
+	AllPostsHref  string `yaml:"all_posts_href"`
+}
+
+// PostEntry represents a blog post in content/posts.yaml.
+type PostEntry struct {
+	ID            string   `yaml:"id"`
+	Title         string   `yaml:"title"`
+	Date          string   `yaml:"date"`
+	FormattedDate string   `yaml:"-"`
+	Summary       string   `yaml:"summary,omitempty"`
+	URL           string   `yaml:"url"`
+	Tags          []string `yaml:"tags,omitempty"`
+	External      bool     `yaml:"external,omitempty"`
+}
+
+// PostsConfig represents content/posts.yaml.
+type PostsConfig struct {
+	Page     PostsPageConfig     `yaml:"page"`
+	HomeTile PostsHomeTileConfig `yaml:"home_tile"`
+	Items    []PostEntry         `yaml:"items"`
 }
 
 // FallbackCommit represents a fallback commit row in the GitHub Activity card.
@@ -208,7 +232,6 @@ type AboutConfig struct {
 	Connect         ConnectCardConfig     `yaml:"connect"`
 	Location        LocationCardConfig    `yaml:"location"`
 	PlaceholderTile PlaceholderTileConfig `yaml:"placeholder_tile"`
-	Posts           PostsCardConfig       `yaml:"posts"`
 	GitHubCard      GitHubCardConfig      `yaml:"github_card"`
 }
 
@@ -260,6 +283,9 @@ type HomepageData struct {
 	Skills           SkillsConfig
 	About            AboutConfig
 	AboutPage        AboutPageConfig
+	Posts            PostsConfig
+	SortedPosts      []PostEntry
+	LatestPost       *PostEntry
 	Footer           FooterConfig
 	OrderedSections  []string
 }
