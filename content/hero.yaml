@@ -3,7 +3,7 @@ name: "Abhijeet Yadav"
 
 bio_parts:
   - text: "I'm a "
-  - text: "Backend Engineer ee"
+  - text: "Backend Engineer"
     href: "#"
   - text: " who loves building robust, scalable systems. I've worked with technologies like "
   - text: "Node.js"
