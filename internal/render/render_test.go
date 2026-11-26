@@ -279,3 +279,39 @@ func TestMetadataAndSitemap(t *testing.T) {
 		t.Errorf("robots.txt missing %q", wantSitemapLine)
 	}
 }
+
+func TestHeaderLogoPaths(t *testing.T) {
+	data, err := loader.LoadAll(filepath.Join("..", "validate", "testdata", "valid"))
+	if err != nil {
+		t.Fatalf("LoadAll fixture failed: %v", err)
+	}
+	if err := validate.Homepage(data); err != nil {
+		t.Fatalf("validate.Homepage failed: %v", err)
+	}
+
+	outDir := t.TempDir()
+	templateDir := filepath.Join("..", "..", "templates")
+	rootDir := filepath.Join("..", "..")
+	if err := render.BuildSite(templateDir, rootDir, outDir, data); err != nil {
+		t.Fatalf("BuildSite failed: %v", err)
+	}
+
+	logoRe := regexp.MustCompile(`<a href="([^"]+)" class="nav-logo">([^<]+)</a>`)
+	for _, page := range render.DefaultPages() {
+		raw, err := os.ReadFile(filepath.Join(outDir, page.Output))
+		if err != nil {
+			t.Fatalf("reading %s: %v", page.Output, err)
+		}
+		m := logoRe.FindStringSubmatch(string(raw))
+		if m == nil {
+			t.Fatalf("%s: nav-logo link not found", page.Output)
+		}
+		if m[1] != data.Site.Nav.LogoHref {
+			t.Errorf("%s: logo href = %q, want %q", page.Output, m[1], data.Site.Nav.LogoHref)
+		}
+		wantLogo := data.Site.Nav.Logo + data.Site.Nav.PagePaths[page.Key]
+		if m[2] != wantLogo {
+			t.Errorf("%s: logo text = %q, want %q", page.Output, m[2], wantLogo)
+		}
+	}
+}

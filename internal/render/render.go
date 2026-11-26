@@ -18,6 +18,7 @@ type PageSpec struct {
 	Template      string
 	Output        string
 	CanonicalPath string
+	PathSegments  func(*model.HomepageData) []string
 	Title         func(*model.HomepageData) string
 	Description   func(*model.HomepageData) string
 }
@@ -31,6 +32,8 @@ type PageContext struct {
 	CanonicalURL    string
 	OGImageURL      string
 	FaviconType     string
+	PathSegments    []string
+	LogoText        string
 }
 
 // DefaultPages returns the configured pages to generate for the site.
@@ -91,6 +94,7 @@ func BuildPages(templateDir, rootDir, outDir string, data *model.HomepageData, p
 		}
 		tmplPath := filepath.Join(templateDir, p.Template)
 		outHTML := filepath.Join(outDir, p.Output)
+		segments := resolvePathSegments(data, p)
 		if err := renderPage(tmplPath, outHTML, PageContext{
 			HomepageData:    data,
 			Page:            p.Key,
@@ -99,6 +103,8 @@ func BuildPages(templateDir, rootDir, outDir string, data *model.HomepageData, p
 			CanonicalURL:    data.Site.URL + p.CanonicalPath,
 			OGImageURL:      data.Site.URL + strings.TrimPrefix(filepath.ToSlash(data.Site.OGImage), "/"),
 			FaviconType:     faviconMIMEType(data.Site.Favicon),
+			PathSegments:    segments,
+			LogoText:        data.Site.Nav.Logo + strings.Join(segments, "/"),
 		}); err != nil {
 			return err
 		}
@@ -149,6 +155,16 @@ func writeRobots(outPath, baseURL string) error {
 	content := fmt.Sprintf("User-agent: *\nAllow: /\n\nSitemap: %ssitemap.xml\n", baseURL)
 	if err := os.WriteFile(outPath, []byte(content), 0o644); err != nil {
 		return fmt.Errorf("writing %s: %w", outPath, err)
+	}
+	return nil
+}
+
+func resolvePathSegments(data *model.HomepageData, p PageSpec) []string {
+	if p.PathSegments != nil {
+		return p.PathSegments(data)
+	}
+	if seg := data.Site.Nav.PagePaths[p.Key]; seg != "" {
+		return []string{seg}
 	}
 	return nil
 }

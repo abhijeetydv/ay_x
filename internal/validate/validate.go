@@ -124,6 +124,20 @@ func validateSite(s *model.SiteConfig, errs *[]string) {
 	if s.Nav.LogoHref != "" && !isSafeHref(s.Nav.LogoHref) {
 		*errs = append(*errs, fmt.Sprintf("site.yaml: invalid nav.logo_href %q", s.Nav.LogoHref))
 	}
+	for _, requiredKey := range []string{"home", "about", "projects"} {
+		if _, ok := s.Nav.PagePaths[requiredKey]; !ok {
+			*errs = append(*errs, fmt.Sprintf("site.yaml: nav.page_paths.%s is required", requiredKey))
+		}
+	}
+	for key, seg := range s.Nav.PagePaths {
+		if key != "home" && seg == "" {
+			*errs = append(*errs, fmt.Sprintf("site.yaml: nav.page_paths.%s must not be empty", key))
+			continue
+		}
+		if strings.ContainsAny(seg, "/ \t\r\n") {
+			*errs = append(*errs, fmt.Sprintf("site.yaml: nav.page_paths.%s %q must not contain '/' or whitespace", key, seg))
+		}
+	}
 	for i, l := range s.Nav.Links {
 		if strings.TrimSpace(l.Label) == "" {
 			*errs = append(*errs, fmt.Sprintf("site.yaml: nav.links[%d].label is required", i))

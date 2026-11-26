@@ -9,9 +9,10 @@ type Link struct {
 
 // NavConfig holds navbar brand and link items.
 type NavConfig struct {
-	Logo     string `yaml:"logo"`
-	LogoHref string `yaml:"logo_href"`
-	Links    []Link `yaml:"links"`
+	Logo      string            `yaml:"logo"`
+	LogoHref  string            `yaml:"logo_href"`
+	PagePaths map[string]string `yaml:"page_paths"`
+	Links     []Link            `yaml:"links"`
 }
 
 // SectionConfig controls homepage section visibility and ordering.

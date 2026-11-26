@@ -12,6 +12,10 @@ theme_color: "#000000"
 nav:
   logo: "~/"
   logo_href: "index.html"
+  page_paths:
+    home: ""
+    about: "about"
+    projects: "projects"
   links:
     - label: "About"
       href: "about.html"
