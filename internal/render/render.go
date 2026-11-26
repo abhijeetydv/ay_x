@@ -1,6 +1,7 @@
 package render
 
 import (
+	"encoding/xml"
 	"fmt"
 	"html/template"
 	"io"
@@ -103,7 +104,53 @@ func BuildPages(templateDir, rootDir, outDir string, data *model.HomepageData, p
 		}
 	}
 
+	if err := writeSitemap(filepath.Join(outDir, "sitemap.xml"), data.Site.URL, pages); err != nil {
+		return err
+	}
+	if err := writeRobots(filepath.Join(outDir, "robots.txt"), data.Site.URL); err != nil {
+		return err
+	}
+
 	return copyStaticAssets(rootDir, outDir)
+}
+
+type sitemapURLSet struct {
+	XMLName xml.Name     `xml:"urlset"`
+	Xmlns   string       `xml:"xmlns,attr"`
+	URLs    []sitemapURL `xml:"url"`
+}
+
+type sitemapURL struct {
+	Loc string `xml:"loc"`
+}
+
+func writeSitemap(outPath, baseURL string, pages []PageSpec) error {
+	urls := make([]sitemapURL, 0, len(pages))
+	for _, p := range pages {
+		urls = append(urls, sitemapURL{Loc: baseURL + p.CanonicalPath})
+	}
+	payload := sitemapURLSet{
+		Xmlns: "http://www.sitemaps.org/schemas/sitemap/0.9",
+		URLs:  urls,
+	}
+	body, err := xml.MarshalIndent(payload, "", "  ")
+	if err != nil {
+		return fmt.Errorf("marshaling sitemap.xml: %w", err)
+	}
+	content := append([]byte(xml.Header), body...)
+	content = append(content, '\n')
+	if err := os.WriteFile(outPath, content, 0o644); err != nil {
+		return fmt.Errorf("writing %s: %w", outPath, err)
+	}
+	return nil
+}
+
+func writeRobots(outPath, baseURL string) error {
+	content := fmt.Sprintf("User-agent: *\nAllow: /\n\nSitemap: %ssitemap.xml\n", baseURL)
+	if err := os.WriteFile(outPath, []byte(content), 0o644); err != nil {
+		return fmt.Errorf("writing %s: %w", outPath, err)
+	}
+	return nil
 }
 
 func faviconMIMEType(path string) string {
