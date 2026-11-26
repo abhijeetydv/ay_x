@@ -44,6 +44,7 @@ func Homepage(data *model.HomepageData) error {
 	validateProjects(&data.Projects, &errs)
 	validateSkills(&data.Skills, &errs)
 	validateAbout(&data.About, &errs)
+	validateAboutPage(&data.AboutPage, &errs)
 	validateFooter(&data.Footer, &errs)
 
 	if len(errs) > 0 {
@@ -68,16 +69,20 @@ func Homepage(data *model.HomepageData) error {
 		}
 	}
 
-	// Build sorted featured projects list.
-	featured := make([]model.ProjectItem, 0, len(data.Projects.Items))
-	for _, p := range data.Projects.Items {
+	// Build sorted all projects and featured projects lists.
+	allProjects := make([]model.ProjectItem, len(data.Projects.Items))
+	copy(allProjects, data.Projects.Items)
+	sort.SliceStable(allProjects, func(i, j int) bool {
+		return allProjects[i].Order < allProjects[j].Order
+	})
+	data.AllProjects = allProjects
+
+	featured := make([]model.ProjectItem, 0, len(allProjects))
+	for _, p := range allProjects {
 		if p.Featured {
 			featured = append(featured, p)
 		}
 	}
-	sort.SliceStable(featured, func(i, j int) bool {
-		return featured[i].Order < featured[j].Order
-	})
 	data.FeaturedProjects = featured
 
 	return nil
@@ -184,8 +189,26 @@ func validateProjects(p *model.ProjectsConfig, errs *[]string) {
 	if strings.TrimSpace(p.Title) == "" {
 		*errs = append(*errs, "projects.yaml: title is required")
 	}
-	if p.ViewAll.Href != "" && !isSafeHref(p.ViewAll.Href) {
+	if strings.TrimSpace(p.ViewAll.Label) == "" {
+		*errs = append(*errs, "projects.yaml: view_all.label is required")
+	}
+	if !isSafeHref(p.ViewAll.Href) {
 		*errs = append(*errs, fmt.Sprintf("projects.yaml: view_all.href %q is invalid", p.ViewAll.Href))
+	}
+	if strings.TrimSpace(p.Page.Title) == "" {
+		*errs = append(*errs, "projects.yaml: page.title is required")
+	}
+	if strings.TrimSpace(p.Page.Heading) == "" {
+		*errs = append(*errs, "projects.yaml: page.heading is required")
+	}
+	if strings.TrimSpace(p.Page.Intro) == "" {
+		*errs = append(*errs, "projects.yaml: page.intro is required")
+	}
+	if strings.TrimSpace(p.Page.BackLabel) == "" {
+		*errs = append(*errs, "projects.yaml: page.back_label is required")
+	}
+	if !isSafeHref(p.Page.BackHref) {
+		*errs = append(*errs, fmt.Sprintf("projects.yaml: page.back_href %q is invalid", p.Page.BackHref))
 	}
 	seenIDs := map[string]bool{}
 	for i, item := range p.Items {
@@ -256,6 +279,46 @@ func validateAbout(a *model.AboutConfig, errs *[]string) {
 	}
 }
 
+func validateAboutPage(a *model.AboutPageConfig, errs *[]string) {
+	if strings.TrimSpace(a.Title) == "" {
+		*errs = append(*errs, "about_page.yaml: title is required")
+	}
+	if strings.TrimSpace(a.Heading) == "" {
+		*errs = append(*errs, "about_page.yaml: heading is required")
+	}
+	if err := validateAssetImage(a.Photo); err != nil {
+		*errs = append(*errs, fmt.Sprintf("about_page.yaml: photo %v", err))
+	}
+	if strings.TrimSpace(a.PhotoAlt) == "" {
+		*errs = append(*errs, "about_page.yaml: photo_alt is required")
+	}
+	if len(a.Paragraphs) == 0 {
+		*errs = append(*errs, "about_page.yaml: paragraphs must not be empty")
+	}
+	for i, p := range a.Paragraphs {
+		if strings.TrimSpace(p) == "" {
+			*errs = append(*errs, fmt.Sprintf("about_page.yaml: paragraphs[%d] must not be empty", i))
+		}
+	}
+	for i, f := range a.Facts {
+		if strings.TrimSpace(f.Label) == "" || strings.TrimSpace(f.Value) == "" {
+			*errs = append(*errs, fmt.Sprintf("about_page.yaml: facts[%d] requires label and value", i))
+		}
+	}
+	if strings.TrimSpace(a.BackLabel) == "" {
+		*errs = append(*errs, "about_page.yaml: back_label is required")
+	}
+	if !isSafeHref(a.BackHref) {
+		*errs = append(*errs, fmt.Sprintf("about_page.yaml: back_href %q is invalid", a.BackHref))
+	}
+	if strings.TrimSpace(a.ProjectsLabel) == "" {
+		*errs = append(*errs, "about_page.yaml: projects_label is required")
+	}
+	if !isSafeHref(a.ProjectsHref) {
+		*errs = append(*errs, fmt.Sprintf("about_page.yaml: projects_href %q is invalid", a.ProjectsHref))
+	}
+}
+
 func validateFooter(f *model.FooterConfig, errs *[]string) {
 	if strings.TrimSpace(f.Copyright) == "" {
 		*errs = append(*errs, "footer.yaml: copyright is required")
@@ -269,15 +332,21 @@ func isSafeHref(raw string) bool {
 	if raw == "" {
 		return false
 	}
-	if raw == "#" || strings.HasPrefix(raw, "#") || strings.HasPrefix(raw, "/") {
+	if raw == "#" || strings.HasPrefix(raw, "#") {
 		return true
+	}
+	if strings.HasPrefix(raw, "/") || strings.HasPrefix(raw, "//") || strings.Contains(raw, "..") {
+		return false
 	}
 	u, err := url.Parse(raw)
 	if err != nil {
 		return false
 	}
 	scheme := strings.ToLower(u.Scheme)
-	return scheme == "http" || scheme == "https" || scheme == "mailto"
+	if scheme == "" {
+		return u.Host == ""
+	}
+	return scheme == "http" || scheme == "https" || scheme == "mailto" || scheme == "tel"
 }
 
 func isSafeExternalURL(raw string) bool {

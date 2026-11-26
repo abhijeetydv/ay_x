@@ -3,10 +3,14 @@ lang: "en"
 
 nav:
   logo: "~/"
-  logo_href: "/"
+  logo_href: "index.html"
   links:
     - label: "About"
-      href: "#about"
+      href: "about.html"
+      page: "about"
+    - label: "Projects"
+      href: "projects.html"
+      page: "projects"
 
 sections:
   - key: "hero"

@@ -2,7 +2,14 @@ title: "Featured Projects"
 icon: "☆"
 view_all:
   label: "View all →"
-  href: "#"
+  href: "projects.html"
+
+page:
+  title: "Projects — Abhijeet"
+  heading: "All Projects"
+  intro: "A collection of backend systems, developer tools, and open-source experiments I have built."
+  back_label: "← Back to home"
+  back_href: "index.html"
 
 items:
   - id: "api-forge"

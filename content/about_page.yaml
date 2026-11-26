@@ -1,0 +1,21 @@
+title: "About — Abhijeet"
+heading: "About Me"
+photo: "assets/me.jpeg"
+photo_alt: "Portrait of Abhijeet Yadav"
+
+# placeholder – edit me
+paragraphs:
+  - "I'm a Backend Engineer who loves building robust, scalable systems. I've worked with technologies like Node.js, Python, Go, PostgreSQL, Redis, and Docker."
+  - "Building reliable APIs and designing clean architectures is what keeps me going. I believe in writing code that's not just functional, but maintainable and elegant."
+  - "Always open to interesting projects and conversations."
+
+facts:
+  - label: "Role"
+    value: "Backend Engineer"
+  - label: "Location"
+    value: "India"
+
+back_label: "← Back to home"
+back_href: "index.html"
+projects_label: "See my projects →"
+projects_href: "projects.html"

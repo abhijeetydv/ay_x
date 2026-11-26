@@ -1,0 +1,21 @@
+{{define "header"}}
+    <!-- Background -->
+    <div class="bg-image"></div>
+    <div class="bg-overlay"></div>
+
+    <!-- Seamless Sticky Navigation -->
+    <nav class="sticky-nav">
+        <div class="navbar container-wide">
+            <div class="nav-left">
+                <a href="{{if .Site.Nav.LogoHref}}{{.Site.Nav.LogoHref}}{{else}}index.html{{end}}" class="nav-logo">{{.Site.Nav.Logo}}</a>
+                <span class="nav-cursor">▌</span>
+            </div>
+            <div class="nav-right">
+                {{$page := .Page}}
+                {{range .Site.Nav.Links}}
+                <a href="{{navHref $page .Href}}" class="nav-link{{if and .Page (eq .Page $page)}} active{{end}}"{{if and .Page (eq .Page $page)}} aria-current="page"{{end}}>{{.Label}}</a>
+                {{end}}
+            </div>
+        </div>
+    </nav>
+{{end}}

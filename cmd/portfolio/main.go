@@ -59,7 +59,7 @@ func runBuild(contentDir, templatePath, outDir string) error {
 	if err := validate.Homepage(data); err != nil {
 		return err
 	}
-	return render.BuildHomepage(templatePath, ".", outDir, data)
+	return render.BuildSite(filepath.Dir(templatePath), ".", outDir, data)
 }
 
 func usage() {

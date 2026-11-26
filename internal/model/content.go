@@ -4,6 +4,7 @@ package model
 type Link struct {
 	Label string `yaml:"label"`
 	Href  string `yaml:"href"`
+	Page  string `yaml:"page,omitempty"`
 }
 
 // NavConfig holds navbar brand and link items.
@@ -107,12 +108,22 @@ type ProjectItem struct {
 	Order        int      `yaml:"order"`
 }
 
+// ProjectsPageConfig holds metadata and copy for projects.html.
+type ProjectsPageConfig struct {
+	Title     string `yaml:"title"`
+	Heading   string `yaml:"heading"`
+	Intro     string `yaml:"intro"`
+	BackLabel string `yaml:"back_label"`
+	BackHref  string `yaml:"back_href"`
+}
+
 // ProjectsConfig represents content/projects.yaml.
 type ProjectsConfig struct {
-	Title   string        `yaml:"title"`
-	Icon    string        `yaml:"icon"`
-	ViewAll Link          `yaml:"view_all"`
-	Items   []ProjectItem `yaml:"items"`
+	Title   string             `yaml:"title"`
+	Icon    string             `yaml:"icon"`
+	ViewAll Link               `yaml:"view_all"`
+	Page    ProjectsPageConfig `yaml:"page"`
+	Items   []ProjectItem      `yaml:"items"`
 }
 
 // SkillsConfig represents content/skills.yaml.
@@ -205,6 +216,26 @@ type FooterConfig struct {
 	Commit    FooterCommitConfig `yaml:"commit"`
 }
 
+// FactItem represents a label/value fact on the About page.
+type FactItem struct {
+	Label string `yaml:"label"`
+	Value string `yaml:"value"`
+}
+
+// AboutPageConfig represents content/about_page.yaml.
+type AboutPageConfig struct {
+	Title         string     `yaml:"title"`
+	Heading       string     `yaml:"heading"`
+	Photo         string     `yaml:"photo"`
+	PhotoAlt      string     `yaml:"photo_alt"`
+	Paragraphs    []string   `yaml:"paragraphs"`
+	Facts         []FactItem `yaml:"facts,omitempty"`
+	BackLabel     string     `yaml:"back_label"`
+	BackHref      string     `yaml:"back_href"`
+	ProjectsLabel string     `yaml:"projects_label"`
+	ProjectsHref  string     `yaml:"projects_href"`
+}
+
 // HomepageData aggregates all validated YAML content for template rendering.
 type HomepageData struct {
 	Site             SiteConfig
@@ -213,8 +244,10 @@ type HomepageData struct {
 	Experience       ExperienceConfig
 	Projects         ProjectsConfig
 	FeaturedProjects []ProjectItem
+	AllProjects      []ProjectItem
 	Skills           SkillsConfig
 	About            AboutConfig
+	AboutPage        AboutPageConfig
 	Footer           FooterConfig
 	OrderedSections  []string
 }
