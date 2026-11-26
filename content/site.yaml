@@ -3,7 +3,7 @@ lang: "en"
 
 nav:
   logo: "~/"
-  logo_href: "/"
+  logo_href: "index.html"
   links:
     - label: "About"
       href: "#about"

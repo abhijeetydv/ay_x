@@ -4,6 +4,7 @@ package model
 type Link struct {
 	Label string `yaml:"label"`
 	Href  string `yaml:"href"`
+	Page  string `yaml:"page,omitempty"`
 }
 
 // NavConfig holds navbar brand and link items.

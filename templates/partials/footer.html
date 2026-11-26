@@ -1,0 +1,42 @@
+{{define "footer"}}
+        <!-- Footer Panel -->
+        <div class="container-wide">
+            <footer class="footer-panel">
+                <div class="footer-inner">
+                    <div class="footer-left">
+                        <span>{{.Footer.Copyright}}</span>
+                        {{if .Footer.Status}}
+                        <span class="footer-sep">-</span>
+                        <span class="status-indicator">
+                            <span class="status-dot"></span>
+                            {{.Footer.Status}}
+                        </span>
+                        {{end}}
+                    </div>
+                    <div class="footer-right">
+                        <span class="footer-clock">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                            <span id="footer-time"></span>
+                        </span>
+                        {{if .Footer.Commit.SHA}}
+                        <span class="footer-sep">·</span>
+                        <a href="{{.Footer.Commit.URL}}" target="_blank" rel="noopener" class="footer-commit" id="footer-commit" title="{{.Footer.Commit.Title}}">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="1.05" y1="12" x2="7" y2="12"/><line x1="17.01" y1="12" x2="22.96" y2="12"/></svg>
+                            <span id="footer-commit-sha">{{.Footer.Commit.SHA}}</span>
+                        </a>
+                        {{end}}
+                        {{if .Social.FooterLinks}}
+                        <span class="footer-sep">·</span>
+                        <div class="footer-socials">
+                            {{range .Social.FooterLinks}}
+                            <a href="{{.URL}}" target="_blank" rel="noopener" aria-label="{{.Label}}">
+                                {{template "social_icon_18" (lower .Platform)}}
+                            </a>
+                            {{end}}
+                        </div>
+                        {{end}}
+                    </div>
+                </div>
+            </footer>
+        </div>
+{{end}}

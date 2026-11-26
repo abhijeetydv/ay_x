@@ -269,15 +269,21 @@ func isSafeHref(raw string) bool {
 	if raw == "" {
 		return false
 	}
-	if raw == "#" || strings.HasPrefix(raw, "#") || strings.HasPrefix(raw, "/") {
+	if raw == "#" || strings.HasPrefix(raw, "#") {
 		return true
+	}
+	if strings.HasPrefix(raw, "/") || strings.HasPrefix(raw, "//") || strings.Contains(raw, "..") {
+		return false
 	}
 	u, err := url.Parse(raw)
 	if err != nil {
 		return false
 	}
 	scheme := strings.ToLower(u.Scheme)
-	return scheme == "http" || scheme == "https" || scheme == "mailto"
+	if scheme == "" {
+		return u.Host == ""
+	}
+	return scheme == "http" || scheme == "https" || scheme == "mailto" || scheme == "tel"
 }
 
 func isSafeExternalURL(raw string) bool {

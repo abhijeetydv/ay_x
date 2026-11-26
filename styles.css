@@ -198,6 +198,14 @@ a {
     width: 100%;
 }
 
+.nav-link.active {
+    color: var(--text-primary);
+}
+
+.nav-link.active::after {
+    width: 100%;
+}
+
 /* --- Hero Section --- */
 .hero {
     padding: 80px 0 40px;
