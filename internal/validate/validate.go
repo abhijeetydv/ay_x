@@ -44,6 +44,7 @@ func Homepage(data *model.HomepageData) error {
 	validateProjects(&data.Projects, &errs)
 	validateSkills(&data.Skills, &errs)
 	validateAbout(&data.About, &errs)
+	validateAboutPage(&data.AboutPage, &errs)
 	validateFooter(&data.Footer, &errs)
 
 	if len(errs) > 0 {
@@ -275,6 +276,46 @@ func validateAbout(a *model.AboutConfig, errs *[]string) {
 		if !hexColorRe.MatchString(lang.Color) {
 			*errs = append(*errs, fmt.Sprintf("about.yaml: github_card.fallback_languages[%d].color %q must be a hex color", i, lang.Color))
 		}
+	}
+}
+
+func validateAboutPage(a *model.AboutPageConfig, errs *[]string) {
+	if strings.TrimSpace(a.Title) == "" {
+		*errs = append(*errs, "about_page.yaml: title is required")
+	}
+	if strings.TrimSpace(a.Heading) == "" {
+		*errs = append(*errs, "about_page.yaml: heading is required")
+	}
+	if err := validateAssetImage(a.Photo); err != nil {
+		*errs = append(*errs, fmt.Sprintf("about_page.yaml: photo %v", err))
+	}
+	if strings.TrimSpace(a.PhotoAlt) == "" {
+		*errs = append(*errs, "about_page.yaml: photo_alt is required")
+	}
+	if len(a.Paragraphs) == 0 {
+		*errs = append(*errs, "about_page.yaml: paragraphs must not be empty")
+	}
+	for i, p := range a.Paragraphs {
+		if strings.TrimSpace(p) == "" {
+			*errs = append(*errs, fmt.Sprintf("about_page.yaml: paragraphs[%d] must not be empty", i))
+		}
+	}
+	for i, f := range a.Facts {
+		if strings.TrimSpace(f.Label) == "" || strings.TrimSpace(f.Value) == "" {
+			*errs = append(*errs, fmt.Sprintf("about_page.yaml: facts[%d] requires label and value", i))
+		}
+	}
+	if strings.TrimSpace(a.BackLabel) == "" {
+		*errs = append(*errs, "about_page.yaml: back_label is required")
+	}
+	if !isSafeHref(a.BackHref) {
+		*errs = append(*errs, fmt.Sprintf("about_page.yaml: back_href %q is invalid", a.BackHref))
+	}
+	if strings.TrimSpace(a.ProjectsLabel) == "" {
+		*errs = append(*errs, "about_page.yaml: projects_label is required")
+	}
+	if !isSafeHref(a.ProjectsHref) {
+		*errs = append(*errs, fmt.Sprintf("about_page.yaml: projects_href %q is invalid", a.ProjectsHref))
 	}
 }
 

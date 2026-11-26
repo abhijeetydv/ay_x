@@ -5,6 +5,9 @@ nav:
   logo: "~/"
   logo_href: "index.html"
   links:
+    - label: "About"
+      href: "about.html"
+      page: "about"
     - label: "Projects"
       href: "projects.html"
       page: "projects"

@@ -216,6 +216,26 @@ type FooterConfig struct {
 	Commit    FooterCommitConfig `yaml:"commit"`
 }
 
+// FactItem represents a label/value fact on the About page.
+type FactItem struct {
+	Label string `yaml:"label"`
+	Value string `yaml:"value"`
+}
+
+// AboutPageConfig represents content/about_page.yaml.
+type AboutPageConfig struct {
+	Title         string     `yaml:"title"`
+	Heading       string     `yaml:"heading"`
+	Photo         string     `yaml:"photo"`
+	PhotoAlt      string     `yaml:"photo_alt"`
+	Paragraphs    []string   `yaml:"paragraphs"`
+	Facts         []FactItem `yaml:"facts,omitempty"`
+	BackLabel     string     `yaml:"back_label"`
+	BackHref      string     `yaml:"back_href"`
+	ProjectsLabel string     `yaml:"projects_label"`
+	ProjectsHref  string     `yaml:"projects_href"`
+}
+
 // HomepageData aggregates all validated YAML content for template rendering.
 type HomepageData struct {
 	Site             SiteConfig
@@ -227,6 +247,7 @@ type HomepageData struct {
 	AllProjects      []ProjectItem
 	Skills           SkillsConfig
 	About            AboutConfig
+	AboutPage        AboutPageConfig
 	Footer           FooterConfig
 	OrderedSections  []string
 }

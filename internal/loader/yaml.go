@@ -25,6 +25,7 @@ func LoadAll(contentDir string) (*model.HomepageData, error) {
 		{"projects.yaml", &data.Projects},
 		{"skills.yaml", &data.Skills},
 		{"about.yaml", &data.About},
+		{"about_page.yaml", &data.AboutPage},
 		{"footer.yaml", &data.Footer},
 	}
 

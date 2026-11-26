@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="{{.Site.Lang}}">
+{{template "head" .}}
+<body data-github-user="{{.Site.GitHub.Username}}" data-github-repo="{{.Site.GitHub.Repo}}" data-timezone="{{.About.Location.Timezone}}">
+{{template "header" .}}
+
+    <div class="scroll-fade-wrapper">
+        <div class="container main-content">
+            <section class="page-header">
+                <a href="{{.AboutPage.BackHref}}" class="back-link">{{.AboutPage.BackLabel}}</a>
+                <h1 class="page-title">{{.AboutPage.Heading}}</h1>
+            </section>
+
+            <section class="about-section">
+                <div class="about-layout">
+                    <div class="about-photo-wrap">
+                        <img src="{{.AboutPage.Photo}}" alt="{{.AboutPage.PhotoAlt}}" class="about-photo">
+                    </div>
+                    <div class="about-body">
+                        <div class="about-paragraphs">
+                            {{range .AboutPage.Paragraphs}}
+                            <p>{{.}}</p>
+                            {{end}}
+                        </div>
+                        {{if .AboutPage.Facts}}
+                        <dl class="about-facts">
+                            {{range .AboutPage.Facts}}
+                            <div class="about-fact">
+                                <dt>{{.Label}}</dt>
+                                <dd>{{.Value}}</dd>
+                            </div>
+                            {{end}}
+                        </dl>
+                        {{end}}
+                        <div class="about-actions">
+                            <a href="{{.AboutPage.ProjectsHref}}" class="view-all">{{.AboutPage.ProjectsLabel}}</a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+{{template "footer" .}}
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -21,8 +21,10 @@ func TestBuildSite(t *testing.T) {
 	}
 
 	const marker = "ZZMARK_RENDER_TEST_GREETING"
+	const aboutMarker = "ZZMARK_RENDER_TEST_ABOUT_PARAGRAPH"
 	const projectsMarker = "ZZMARK_RENDER_TEST_PROJECTS_HEADING"
 	data.Hero.Greeting = marker
+	data.AboutPage.Paragraphs = append(data.AboutPage.Paragraphs, aboutMarker)
 	data.Projects.Page.Heading = projectsMarker
 
 	outDir := t.TempDir()
@@ -32,7 +34,7 @@ func TestBuildSite(t *testing.T) {
 		t.Fatalf("BuildSite failed: %v", err)
 	}
 
-	for _, name := range []string{"index.html", "projects.html", "styles.css", "script.js"} {
+	for _, name := range []string{"index.html", "about.html", "projects.html", "styles.css", "script.js"} {
 		if _, err := os.Stat(filepath.Join(outDir, name)); err != nil {
 			t.Fatalf("expected output file %s: %v", name, err)
 		}
@@ -40,6 +42,7 @@ func TestBuildSite(t *testing.T) {
 
 	expectedMarkers := map[string]string{
 		"index.html":    marker,
+		"about.html":    aboutMarker,
 		"projects.html": projectsMarker,
 	}
 	for _, page := range render.DefaultPages() {

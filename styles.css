@@ -533,6 +533,75 @@ a {
     padding: 12px 0 48px;
 }
 
+/* --- About Page --- */
+.about-section {
+    padding: 8px 0 48px;
+}
+
+.about-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 36px;
+    align-items: start;
+}
+
+.about-photo-wrap {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.about-photo {
+    display: block;
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+}
+
+.about-body {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.about-paragraphs {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    font-size: 0.92rem;
+    color: var(--text-secondary);
+    line-height: 1.85;
+}
+
+.about-facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    padding: 18px 20px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+
+.about-fact dt {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 4px;
+}
+
+.about-fact dd {
+    font-size: 0.88rem;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.about-actions {
+    padding-top: 4px;
+}
+
 .project-card {
     background: var(--bg-card);
     border: 1px solid var(--border);
@@ -1042,6 +1111,15 @@ a {
 
     .projects-grid {
         grid-template-columns: 1fr;
+    }
+
+    .about-layout {
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+
+    .about-photo-wrap {
+        max-width: 280px;
     }
 
     .info-grid {

@@ -1,0 +1,20 @@
+title: "About — Fixture"
+heading: "About Me"
+photo: "assets/me.jpeg"
+photo_alt: "Fixture portrait"
+
+# placeholder – edit me
+paragraphs:
+  - "Fixture bio paragraph one."
+  - "Fixture bio paragraph two."
+
+facts:
+  - label: "Role"
+    value: "Engineer"
+  - label: "Location"
+    value: "India"
+
+back_label: "← Back to home"
+back_href: "index.html"
+projects_label: "See my projects →"
+projects_href: "projects.html"
