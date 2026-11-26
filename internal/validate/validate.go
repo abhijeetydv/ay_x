@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"unicode/utf8"
 
 	"portfolio/internal/model"
 )
@@ -92,8 +93,30 @@ func validateSite(s *model.SiteConfig, errs *[]string) {
 	if strings.TrimSpace(s.Title) == "" {
 		*errs = append(*errs, "site.yaml: title is required")
 	}
+	if strings.TrimSpace(s.Name) == "" {
+		*errs = append(*errs, "site.yaml: name is required")
+	}
 	if strings.TrimSpace(s.Lang) == "" {
 		s.Lang = "en"
+	}
+	if strings.TrimSpace(s.Locale) == "" {
+		*errs = append(*errs, "site.yaml: locale is required")
+	}
+	if !isSafeBaseURL(s.URL) {
+		*errs = append(*errs, fmt.Sprintf("site.yaml: url %q must be a valid https URL ending with '/'", s.URL))
+	}
+	validateDescription("site.yaml: description", s.Description, errs)
+	if err := validateAssetImage(s.OGImage); err != nil {
+		*errs = append(*errs, fmt.Sprintf("site.yaml: og_image %v", err))
+	}
+	if strings.TrimSpace(s.OGImageAlt) == "" {
+		*errs = append(*errs, "site.yaml: og_image_alt is required")
+	}
+	if err := validateAssetImage(s.Favicon); err != nil {
+		*errs = append(*errs, fmt.Sprintf("site.yaml: favicon %v", err))
+	}
+	if s.ThemeColor != "" && !hexColorRe.MatchString(s.ThemeColor) {
+		*errs = append(*errs, fmt.Sprintf("site.yaml: theme_color %q must be a hex color", s.ThemeColor))
 	}
 	if strings.TrimSpace(s.Nav.Logo) == "" {
 		*errs = append(*errs, "site.yaml: nav.logo is required")
@@ -198,6 +221,7 @@ func validateProjects(p *model.ProjectsConfig, errs *[]string) {
 	if strings.TrimSpace(p.Page.Title) == "" {
 		*errs = append(*errs, "projects.yaml: page.title is required")
 	}
+	validateDescription("projects.yaml: page.description", p.Page.Description, errs)
 	if strings.TrimSpace(p.Page.Heading) == "" {
 		*errs = append(*errs, "projects.yaml: page.heading is required")
 	}
@@ -283,6 +307,7 @@ func validateAboutPage(a *model.AboutPageConfig, errs *[]string) {
 	if strings.TrimSpace(a.Title) == "" {
 		*errs = append(*errs, "about_page.yaml: title is required")
 	}
+	validateDescription("about_page.yaml: description", a.Description, errs)
 	if strings.TrimSpace(a.Heading) == "" {
 		*errs = append(*errs, "about_page.yaml: heading is required")
 	}
@@ -356,6 +381,28 @@ func isSafeExternalURL(raw string) bool {
 	}
 	scheme := strings.ToLower(u.Scheme)
 	return scheme == "http" || scheme == "https"
+}
+
+func isSafeBaseURL(raw string) bool {
+	if !strings.HasSuffix(raw, "/") {
+		return false
+	}
+	u, err := url.Parse(raw)
+	if err != nil || u.Host == "" {
+		return false
+	}
+	return strings.ToLower(u.Scheme) == "https"
+}
+
+func validateDescription(field, desc string, errs *[]string) {
+	trimmed := strings.TrimSpace(desc)
+	if trimmed == "" {
+		*errs = append(*errs, field+" is required")
+		return
+	}
+	if utf8.RuneCountInString(trimmed) > 200 {
+		*errs = append(*errs, field+" must be at most 200 characters")
+	}
 }
 
 func validateAssetImage(raw string) error {

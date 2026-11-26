@@ -6,6 +6,7 @@ view_all:
 
 page:
   title: "Projects — Fixture"
+  description: "Fixture projects page description."
   heading: "All Projects"
   intro: "All fixture projects."
   back_label: "← Back to home"

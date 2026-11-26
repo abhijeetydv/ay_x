@@ -29,11 +29,19 @@ type GitHubRepoConfig struct {
 
 // SiteConfig represents content/site.yaml.
 type SiteConfig struct {
-	Title    string           `yaml:"title"`
-	Lang     string           `yaml:"lang"`
-	Nav      NavConfig        `yaml:"nav"`
-	Sections []SectionConfig  `yaml:"sections"`
-	GitHub   GitHubRepoConfig `yaml:"github"`
+	Title       string           `yaml:"title"`
+	Name        string           `yaml:"name"`
+	Lang        string           `yaml:"lang"`
+	Locale      string           `yaml:"locale"`
+	URL         string           `yaml:"url"`
+	Description string           `yaml:"description"`
+	OGImage     string           `yaml:"og_image"`
+	OGImageAlt  string           `yaml:"og_image_alt"`
+	Favicon     string           `yaml:"favicon"`
+	ThemeColor  string           `yaml:"theme_color,omitempty"`
+	Nav         NavConfig        `yaml:"nav"`
+	Sections    []SectionConfig  `yaml:"sections"`
+	GitHub      GitHubRepoConfig `yaml:"github"`
 }
 
 // BioPart represents either plain text or an inline-link block in the hero bio.
@@ -110,11 +118,12 @@ type ProjectItem struct {
 
 // ProjectsPageConfig holds metadata and copy for projects.html.
 type ProjectsPageConfig struct {
-	Title     string `yaml:"title"`
-	Heading   string `yaml:"heading"`
-	Intro     string `yaml:"intro"`
-	BackLabel string `yaml:"back_label"`
-	BackHref  string `yaml:"back_href"`
+	Title       string `yaml:"title"`
+	Description string `yaml:"description"`
+	Heading     string `yaml:"heading"`
+	Intro       string `yaml:"intro"`
+	BackLabel   string `yaml:"back_label"`
+	BackHref    string `yaml:"back_href"`
 }
 
 // ProjectsConfig represents content/projects.yaml.
@@ -225,6 +234,7 @@ type FactItem struct {
 // AboutPageConfig represents content/about_page.yaml.
 type AboutPageConfig struct {
 	Title         string     `yaml:"title"`
+	Description   string     `yaml:"description"`
 	Heading       string     `yaml:"heading"`
 	Photo         string     `yaml:"photo"`
 	PhotoAlt      string     `yaml:"photo_alt"`
