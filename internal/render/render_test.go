@@ -1,6 +1,7 @@
 package render_test
 
 import (
+	"encoding/xml"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -174,5 +175,107 @@ func TestLinkAndAssetIntegrity(t *testing.T) {
 				t.Errorf("%s: <img> missing non-empty alt: %s", name, imgTag)
 			}
 		}
+	}
+}
+
+func TestMetadataAndSitemap(t *testing.T) {
+	data, err := loader.LoadAll(filepath.Join("..", "validate", "testdata", "valid"))
+	if err != nil {
+		t.Fatalf("LoadAll fixture failed: %v", err)
+	}
+	if err := validate.Homepage(data); err != nil {
+		t.Fatalf("validate.Homepage failed: %v", err)
+	}
+
+	outDir := t.TempDir()
+	templateDir := filepath.Join("..", "..", "templates")
+	rootDir := filepath.Join("..", "..")
+	if err := render.BuildSite(templateDir, rootDir, outDir, data); err != nil {
+		t.Fatalf("BuildSite failed: %v", err)
+	}
+
+	titleRe := regexp.MustCompile(`<title>[^<]+</title>`)
+	descRe := regexp.MustCompile(`<meta name="description" content="([^"]+)">`)
+	canonRe := regexp.MustCompile(`<link rel="canonical" href="([^"]+)">`)
+	ogTitleRe := regexp.MustCompile(`<meta property="og:title" content="([^"]+)">`)
+	ogDescRe := regexp.MustCompile(`<meta property="og:description" content="([^"]+)">`)
+	ogURLRe := regexp.MustCompile(`<meta property="og:url" content="([^"]+)">`)
+	ogImageRe := regexp.MustCompile(`<meta property="og:image" content="([^"]+)">`)
+	twCardRe := regexp.MustCompile(`<meta name="twitter:card" content="summary_large_image">`)
+	faviconRe := regexp.MustCompile(`<link rel="icon"[^>]*href="([^"]+)"`)
+
+	for _, page := range render.DefaultPages() {
+		raw, err := os.ReadFile(filepath.Join(outDir, page.Output))
+		if err != nil {
+			t.Fatalf("reading %s: %v", page.Output, err)
+		}
+		html := string(raw)
+
+		if matches := titleRe.FindAllString(html, -1); len(matches) != 1 {
+			t.Errorf("%s: expected 1 <title>, got %d", page.Output, len(matches))
+		}
+		if matches := descRe.FindAllStringSubmatch(html, -1); len(matches) != 1 || strings.TrimSpace(matches[0][1]) == "" {
+			t.Errorf("%s: expected 1 non-empty meta description, got %d", page.Output, len(matches))
+		}
+		canonMatches := canonRe.FindAllStringSubmatch(html, -1)
+		if len(canonMatches) != 1 {
+			t.Errorf("%s: expected 1 canonical link, got %d", page.Output, len(canonMatches))
+		} else if !strings.HasPrefix(canonMatches[0][1], data.Site.URL) {
+			t.Errorf("%s: canonical %q does not start with %q", page.Output, canonMatches[0][1], data.Site.URL)
+		}
+
+		if !ogTitleRe.MatchString(html) {
+			t.Errorf("%s: missing og:title", page.Output)
+		}
+		if !ogDescRe.MatchString(html) {
+			t.Errorf("%s: missing og:description", page.Output)
+		}
+		if !ogURLRe.MatchString(html) {
+			t.Errorf("%s: missing og:url", page.Output)
+		}
+		if m := ogImageRe.FindStringSubmatch(html); m == nil || !strings.HasPrefix(m[1], data.Site.URL) {
+			t.Errorf("%s: missing or relative og:image (must start with %q)", page.Output, data.Site.URL)
+		}
+		if !twCardRe.MatchString(html) {
+			t.Errorf("%s: missing twitter:card", page.Output)
+		}
+		favMatch := faviconRe.FindStringSubmatch(html)
+		if favMatch == nil {
+			t.Errorf("%s: missing favicon link", page.Output)
+		} else if _, err := os.Stat(filepath.Join(outDir, filepath.FromSlash(favMatch[1]))); err != nil {
+			t.Errorf("%s: favicon file %q missing in output: %v", page.Output, favMatch[1], err)
+		}
+	}
+
+	sitemapRaw, err := os.ReadFile(filepath.Join(outDir, "sitemap.xml"))
+	if err != nil {
+		t.Fatalf("reading sitemap.xml: %v", err)
+	}
+	var parsed struct {
+		URLs []struct {
+			Loc string `xml:"loc"`
+		} `xml:"url"`
+	}
+	if err := xml.Unmarshal(sitemapRaw, &parsed); err != nil {
+		t.Fatalf("parsing sitemap.xml: %v", err)
+	}
+	gotLocs := map[string]bool{}
+	for _, u := range parsed.URLs {
+		gotLocs[u.Loc] = true
+	}
+	for _, page := range render.DefaultPages() {
+		want := data.Site.URL + page.CanonicalPath
+		if !gotLocs[want] {
+			t.Errorf("sitemap.xml missing %q", want)
+		}
+	}
+
+	robotsRaw, err := os.ReadFile(filepath.Join(outDir, "robots.txt"))
+	if err != nil {
+		t.Fatalf("reading robots.txt: %v", err)
+	}
+	wantSitemapLine := "Sitemap: " + data.Site.URL + "sitemap.xml"
+	if !strings.Contains(string(robotsRaw), wantSitemapLine) {
+		t.Errorf("robots.txt missing %q", wantSitemapLine)
 	}
 }
