@@ -12,11 +12,15 @@ document.addEventListener('DOMContentLoaded', () => {
     initGitHubData();
 });
 
-// --- Live Clock (IST) ---
+const CONFIG_TIMEZONE = ((document.body && document.body.dataset.timezone) || '').trim();
+
+// --- Live Clock ---
 function initClock() {
+    if (!CONFIG_TIMEZONE) return;
+
     function updateTime() {
         const now = new Date();
-        const ist = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+        const ist = new Date(now.toLocaleString('en-US', { timeZone: CONFIG_TIMEZONE }));
         const hours = String(ist.getHours()).padStart(2, '0');
         const minutes = String(ist.getMinutes()).padStart(2, '0');
         const seconds = String(ist.getSeconds()).padStart(2, '0');
@@ -32,9 +36,11 @@ function initClock() {
 
 // --- Footer Live Clock ---
 function initFooterClock() {
+    if (!CONFIG_TIMEZONE) return;
+
     function updateFooterTime() {
         const now = new Date();
-        const ist = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+        const ist = new Date(now.toLocaleString('en-US', { timeZone: CONFIG_TIMEZONE }));
         const hours = String(ist.getHours()).padStart(2, '0');
         const minutes = String(ist.getMinutes()).padStart(2, '0');
         const seconds = String(ist.getSeconds()).padStart(2, '0');
@@ -121,8 +127,8 @@ function initCareerTabs() {
 }
 
 // --- GitHub Activity & Latest Commit ---
-const GITHUB_USER = 'abhijeetydv';
-const GITHUB_REPO = 'ay_x';
+const GITHUB_USER = ((document.body && document.body.dataset.githubUser) || '').trim();
+const GITHUB_REPO = ((document.body && document.body.dataset.githubRepo) || '').trim();
 
 const LANG_COLORS = {
     JavaScript: '#f9e2af',
@@ -136,14 +142,17 @@ const LANG_COLORS = {
 };
 
 async function initGitHubData() {
-    await Promise.all([
-        fetchLatestRepoCommit(),
-        fetchRecentActivity(),
-        fetchLanguageBreakdown(),
-    ]);
+    if (!GITHUB_USER) return;
+
+    const tasks = [fetchRecentActivity()];
+    if (GITHUB_REPO) {
+        tasks.push(fetchLatestRepoCommit(), fetchLanguageBreakdown());
+    }
+    await Promise.all(tasks);
 }
 
 async function fetchLatestRepoCommit() {
+    if (!GITHUB_USER || !GITHUB_REPO) return;
     const shaEl = document.getElementById('footer-commit-sha');
     const linkEl = document.getElementById('footer-commit');
     if (!shaEl || !linkEl) return;
@@ -167,6 +176,7 @@ async function fetchLatestRepoCommit() {
 }
 
 async function fetchRecentActivity() {
+    if (!GITHUB_USER) return;
     const container = document.getElementById('github-activity');
     if (!container) return;
 
@@ -331,6 +341,7 @@ function renderCommitItems(container, items) {
 }
 
 async function fetchLanguageBreakdown() {
+    if (!GITHUB_USER || !GITHUB_REPO) return;
     const graphEl = document.getElementById('contrib-graph');
     if (!graphEl) return;
 

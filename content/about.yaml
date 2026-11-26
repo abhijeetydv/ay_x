@@ -1,0 +1,57 @@
+connect:
+  title: "Let's Connect"
+  description: "Always open to interesting projects and conversations."
+  cta_label: "Send an Email"
+  cta_href: "mailto:abhijeet@example.com"
+
+location:
+  title: "Currently Based In"
+  name: "India"
+  map_label: "INDIA"
+  map_image: "assets/map.png"
+  map_alt: "Map of India"
+  timezone: "Asia/Kolkata"
+
+placeholder_tile:
+  enabled: true
+
+posts:
+  title: "Latest Posts"
+  external_href: "#"
+  items:
+    - title: "Building Scalable APIs with Go"
+      href: "#"
+      date: "Nov 20, 2026"
+    - title: "Redis Caching Patterns That Scale"
+      href: "#"
+      date: "Oct 15, 2026"
+    - title: "Docker Multi-Stage Builds"
+      href: "#"
+      date: "Sep 8, 2026"
+    - title: "Hello World"
+      href: "#"
+      date: "Aug 1, 2026"
+
+github_card:
+  title: "GitHub Activity"
+  info_label: "[info]"
+  info_href: "#"
+  view_label: "View on GitHub ↗"
+  view_href: "https://github.com/abhijeetydv"
+  fallback_commits:
+    - repo: "ay_x"
+      message: "edit home page 01"
+      sha: "7d5fa40"
+  fallback_languages:
+    - width: "20%"
+      color: "#94e2d5"
+    - width: "35%"
+      color: "#89dceb"
+    - width: "15%"
+      color: "#74c7ec"
+    - width: "10%"
+      color: "#89b4fa"
+    - width: "12%"
+      color: "#cba6f7"
+    - width: "8%"
+      color: "#f38ba8"

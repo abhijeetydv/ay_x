@@ -1,0 +1,38 @@
+connect:
+  title: "Connect"
+  description: "Say hello."
+  cta_label: "Email"
+  cta_href: "mailto:test@example.com"
+
+location:
+  title: "Location"
+  name: "India"
+  map_label: "INDIA"
+  map_image: "assets/map.png"
+  map_alt: "Map of India"
+  timezone: "Asia/Kolkata"
+
+placeholder_tile:
+  enabled: false
+
+posts:
+  title: "Posts"
+  external_href: "#"
+  items:
+    - title: "First Post"
+      href: "#"
+      date: "Jan 1, 2026"
+
+github_card:
+  title: "GitHub"
+  info_label: "[info]"
+  info_href: "#"
+  view_label: "View"
+  view_href: "https://github.com/testuser"
+  fallback_commits:
+    - repo: "testrepo"
+      message: "init"
+      sha: "abc1234"
+  fallback_languages:
+    - width: "100%"
+      color: "#89dceb"
