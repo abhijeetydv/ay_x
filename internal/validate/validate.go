@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"os"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
@@ -221,6 +223,12 @@ func validateAbout(a *model.AboutConfig, errs *[]string) {
 	if strings.TrimSpace(a.Location.Title) == "" || strings.TrimSpace(a.Location.Name) == "" {
 		*errs = append(*errs, "about.yaml: location.title and location.name are required")
 	}
+	if err := validateAssetImage(a.Location.MapImage); err != nil {
+		*errs = append(*errs, fmt.Sprintf("about.yaml: location.map_image %v", err))
+	}
+	if strings.TrimSpace(a.Location.MapAlt) == "" {
+		*errs = append(*errs, "about.yaml: location.map_alt is required")
+	}
 	if a.Posts.ExternalHref != "" && !isSafeHref(a.Posts.ExternalHref) {
 		*errs = append(*errs, fmt.Sprintf("about.yaml: posts.external_href %q is invalid", a.Posts.ExternalHref))
 	}
@@ -276,4 +284,45 @@ func isSafeExternalURL(raw string) bool {
 	}
 	scheme := strings.ToLower(u.Scheme)
 	return scheme == "http" || scheme == "https"
+}
+
+func validateAssetImage(raw string) error {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return errors.New("is required")
+	}
+	if strings.Contains(trimmed, "://") || strings.HasPrefix(trimmed, "/") || filepath.IsAbs(trimmed) {
+		return fmt.Errorf("%q must be a relative path under assets/", raw)
+	}
+	if strings.Contains(trimmed, "..") {
+		return fmt.Errorf("%q must not contain '..'", raw)
+	}
+	cleaned := filepath.ToSlash(filepath.Clean(trimmed))
+	if !strings.HasPrefix(cleaned, "assets/") || cleaned == "assets/" {
+		return fmt.Errorf("%q must point to a file under assets/", raw)
+	}
+	resolved, ok := resolveAssetPath(cleaned)
+	if !ok {
+		return fmt.Errorf("%q does not exist under assets/", raw)
+	}
+	info, err := os.Stat(resolved)
+	if err != nil || info.IsDir() {
+		return fmt.Errorf("%q is not a valid file", raw)
+	}
+	return nil
+}
+
+func resolveAssetPath(rel string) (string, bool) {
+	if _, err := os.Stat(rel); err == nil {
+		return rel, true
+	}
+	for _, prefix := range []string{"..", filepath.Join("..", "..")} {
+		if _, err := os.Stat(filepath.Join(prefix, "go.mod")); err == nil {
+			candidate := filepath.Join(prefix, rel)
+			if _, err := os.Stat(candidate); err == nil {
+				return candidate, true
+			}
+		}
+	}
+	return "", false
 }

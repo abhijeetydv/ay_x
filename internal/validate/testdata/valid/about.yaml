@@ -8,6 +8,8 @@ location:
   title: "Location"
   name: "India"
   map_label: "INDIA"
+  map_image: "assets/map.png"
+  map_alt: "Map of India"
   timezone: "Asia/Kolkata"
 
 placeholder_tile:

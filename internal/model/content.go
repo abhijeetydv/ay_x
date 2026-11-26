@@ -133,6 +133,8 @@ type LocationCardConfig struct {
 	Title    string `yaml:"title"`
 	Name     string `yaml:"name"`
 	MapLabel string `yaml:"map_label"`
+	MapImage string `yaml:"map_image"`
+	MapAlt   string `yaml:"map_alt"`
 	Timezone string `yaml:"timezone"`
 }
 
