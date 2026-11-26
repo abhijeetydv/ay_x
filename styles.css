@@ -57,7 +57,10 @@ body {
     background: var(--bg-base);
     color: var(--text-primary);
     line-height: 1.7;
-    height: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+    height: 100vh;
+    height: 100dvh;
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -103,6 +106,8 @@ a {
 }
 
 .main-content {
+    flex: 1 0 auto;
+    width: 100%;
     padding-top: 20px;
     padding-bottom: 0;
 }
@@ -110,6 +115,8 @@ a {
 /* Scrollable wrapper with viewport-fixed top fade */
 .scroll-fade-wrapper {
     flex: 1;
+    display: flex;
+    flex-direction: column;
     overflow-y: auto;
     overflow-x: hidden;
     scroll-behavior: smooth;
@@ -123,6 +130,12 @@ a {
         transparent 0px,
         black 48px
     );
+}
+
+.scroll-fade-wrapper > .container-wide {
+    width: 100%;
+    flex-shrink: 0;
+    margin-top: auto;
 }
 
 /* --- Seamless Sticky Nav --- */
