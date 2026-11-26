@@ -32,7 +32,7 @@
     --font-sans: 'Courier New', 'Lucida Console', 'Monaco', 'Consolas';
     --width-content: 1140px;
     --width-wide: 1280px;
-    --page-fade-duration: 500ms;
+    --page-fade-duration: 400ms;
 }
 
 /* --- Reset & Base --- */
