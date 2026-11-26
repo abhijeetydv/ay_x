@@ -11,7 +11,7 @@ import (
 	"portfolio/internal/validate"
 )
 
-func TestBuildHomepage(t *testing.T) {
+func TestBuildSite(t *testing.T) {
 	data, err := loader.LoadAll(filepath.Join("..", "validate", "testdata", "valid"))
 	if err != nil {
 		t.Fatalf("LoadAll fixture failed: %v", err)
@@ -24,10 +24,10 @@ func TestBuildHomepage(t *testing.T) {
 	data.Hero.Greeting = marker
 
 	outDir := t.TempDir()
-	templatePath := filepath.Join("..", "..", "templates", "home.html")
+	templateDir := filepath.Join("..", "..", "templates")
 	rootDir := filepath.Join("..", "..")
-	if err := render.BuildHomepage(templatePath, rootDir, outDir, data); err != nil {
-		t.Fatalf("BuildHomepage failed: %v", err)
+	if err := render.BuildSite(templateDir, rootDir, outDir, data); err != nil {
+		t.Fatalf("BuildSite failed: %v", err)
 	}
 
 	for _, name := range []string{"index.html", "styles.css", "script.js"} {
@@ -36,17 +36,22 @@ func TestBuildHomepage(t *testing.T) {
 		}
 	}
 
-	raw, err := os.ReadFile(filepath.Join(outDir, "index.html"))
-	if err != nil {
-		t.Fatalf("reading generated index.html: %v", err)
+	expectedMarkers := map[string]string{
+		"index.html": marker,
 	}
-	html := string(raw)
-	if !strings.Contains(html, marker) {
-		t.Errorf("generated index.html does not contain marker %q", marker)
-	}
-	for _, bad := range []string{"<no value>", "{{", "%!"} {
-		if strings.Contains(html, bad) {
-			t.Errorf("generated index.html contains unrendered artifact %q", bad)
+	for _, page := range render.DefaultPages() {
+		raw, err := os.ReadFile(filepath.Join(outDir, page.Output))
+		if err != nil {
+			t.Fatalf("reading generated %s: %v", page.Output, err)
+		}
+		html := string(raw)
+		if m, ok := expectedMarkers[page.Output]; ok && !strings.Contains(html, m) {
+			t.Errorf("generated %s does not contain marker %q", page.Output, m)
+		}
+		for _, bad := range []string{"<no value>", "{{", "%!"} {
+			if strings.Contains(html, bad) {
+				t.Errorf("generated %s contains unrendered artifact %q", page.Output, bad)
+			}
 		}
 	}
 }

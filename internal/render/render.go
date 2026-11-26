@@ -11,6 +11,14 @@ import (
 	"portfolio/internal/model"
 )
 
+// PageSpec describes a single generated HTML page.
+type PageSpec struct {
+	Key      string
+	Template string
+	Output   string
+	Title    func(*model.HomepageData) string
+}
+
 // PageContext wraps HomepageData with the active page key and title.
 type PageContext struct {
 	*model.HomepageData
@@ -18,22 +26,63 @@ type PageContext struct {
 	PageTitle string
 }
 
-// BuildHomepage renders templates/home.html using data into outDir/index.html
-// and copies static assets (styles.css, script.js, and optional assets/) into outDir.
-func BuildHomepage(templatePath, rootDir, outDir string, data *model.HomepageData) error {
+// DefaultPages returns the configured pages to generate for the site.
+func DefaultPages() []PageSpec {
+	return []PageSpec{
+		{
+			Key:      "home",
+			Template: "home.html",
+			Output:   "index.html",
+			Title:    func(d *model.HomepageData) string { return d.Site.Title },
+		},
+	}
+}
+
+// BuildSite renders all configured pages from a single loaded HomepageData
+// and copies static assets (styles.css, script.js, and optional assets/) once.
+func BuildSite(templateDir, rootDir, outDir string, data *model.HomepageData) error {
+	return BuildPages(templateDir, rootDir, outDir, data, DefaultPages())
+}
+
+// BuildPages renders the given pages from a single loaded HomepageData
+// and copies static assets once into outDir.
+func BuildPages(templateDir, rootDir, outDir string, data *model.HomepageData, pages []PageSpec) error {
 	if err := os.MkdirAll(outDir, 0o755); err != nil {
 		return fmt.Errorf("creating output directory %s: %w", outDir, err)
 	}
 
-	if err := renderPage(templatePath, filepath.Join(outDir, "index.html"), PageContext{
-		HomepageData: data,
-		Page:         "home",
-		PageTitle:    data.Site.Title,
-	}); err != nil {
-		return err
+	for _, p := range pages {
+		title := data.Site.Title
+		if p.Title != nil {
+			if t := p.Title(data); t != "" {
+				title = t
+			}
+		}
+		tmplPath := filepath.Join(templateDir, p.Template)
+		outHTML := filepath.Join(outDir, p.Output)
+		if err := renderPage(tmplPath, outHTML, PageContext{
+			HomepageData: data,
+			Page:         p.Key,
+			PageTitle:    title,
+		}); err != nil {
+			return err
+		}
 	}
 
 	return copyStaticAssets(rootDir, outDir)
+}
+
+// BuildHomepage renders templates/home.html using data into outDir/index.html
+// and copies static assets (styles.css, script.js, and optional assets/) into outDir.
+func BuildHomepage(templatePath, rootDir, outDir string, data *model.HomepageData) error {
+	return BuildPages(filepath.Dir(templatePath), rootDir, outDir, data, []PageSpec{
+		{
+			Key:      "home",
+			Template: filepath.Base(templatePath),
+			Output:   "index.html",
+			Title:    func(d *model.HomepageData) string { return d.Site.Title },
+		},
+	})
 }
 
 func renderPage(templatePath, outHTML string, ctx PageContext) error {
