@@ -32,6 +32,7 @@
     --font-sans: 'Courier New', 'Lucida Console', 'Monaco', 'Consolas';
     --width-content: 1140px;
     --width-wide: 1280px;
+    --page-fade-duration: 500ms;
 }
 
 /* --- Reset & Base --- */
@@ -1200,9 +1201,12 @@ a {
 }
 
 ::view-transition-old(root),
-::view-transition-new(root) {
-    animation-duration: 220ms;
-    animation-timing-function: ease;
+::view-transition-new(root),
+::view-transition-group(site-header),
+::view-transition-old(site-header),
+::view-transition-new(site-header) {
+    animation-duration: var(--page-fade-duration);
+    animation-timing-function: ease-in-out;
 }
 
 @media (prefers-reduced-motion: reduce) {
