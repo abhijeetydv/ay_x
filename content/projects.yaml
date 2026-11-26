@@ -1,0 +1,52 @@
+title: "Featured Projects"
+icon: "☆"
+view_all:
+  label: "View all →"
+  href: "#"
+
+items:
+  - id: "api-forge"
+    owner: "abhijeet"
+    repo: "api-forge"
+    stars: 142
+    terminal_desc: "A lightning-fast REST API scaffolding tool with built-in auth, rate limiting, and database migrations"
+    title: "API Forge"
+    summary: "A CLI tool that scaffolds production-ready REST APIs with authentication, rate limiting, logging, and database integration out of the box."
+    tags:
+      - "node.js"
+      - "typescript"
+      - "cli"
+      - "rest-api"
+      - "scaffolding"
+    featured: true
+    order: 1
+
+  - id: "cache-storm"
+    owner: "abhijeet"
+    repo: "cache-storm"
+    stars: 89
+    terminal_desc: "Distributed caching layer with automatic invalidation and real-time sync across nodes"
+    title: "Cache Storm"
+    summary: "A distributed caching solution built on top of Redis with automatic cache invalidation, pub/sub sync, and built-in monitoring dashboards."
+    tags:
+      - "golang"
+      - "redis"
+      - "docker"
+      - "distributed"
+    featured: true
+    order: 2
+
+  - id: "cachefffffff-storm"
+    owner: "abhijeet"
+    repo: "cache-storm"
+    stars: 89
+    terminal_desc: "Distributed caching layer with automatic invalidation and real-time sync across nodes"
+    title: "Cache Storm"
+    summary: "A distributed caching solution built on top of Redis with automatic cache invalidation, pub/sub sync, and built-in monitoring dashboards."
+    tags:
+      - "golang"
+      - "redis"
+      - "docker"
+      - "distributed"
+    featured: true
+    order: 3

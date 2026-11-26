@@ -12,11 +12,13 @@ document.addEventListener('DOMContentLoaded', () => {
     initGitHubData();
 });
 
+const CONFIG_TIMEZONE = (document.body && document.body.dataset.timezone) || 'Asia/Kolkata';
+
 // --- Live Clock (IST) ---
 function initClock() {
     function updateTime() {
         const now = new Date();
-        const ist = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+        const ist = new Date(now.toLocaleString('en-US', { timeZone: CONFIG_TIMEZONE }));
         const hours = String(ist.getHours()).padStart(2, '0');
         const minutes = String(ist.getMinutes()).padStart(2, '0');
         const seconds = String(ist.getSeconds()).padStart(2, '0');
@@ -34,7 +36,7 @@ function initClock() {
 function initFooterClock() {
     function updateFooterTime() {
         const now = new Date();
-        const ist = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+        const ist = new Date(now.toLocaleString('en-US', { timeZone: CONFIG_TIMEZONE }));
         const hours = String(ist.getHours()).padStart(2, '0');
         const minutes = String(ist.getMinutes()).padStart(2, '0');
         const seconds = String(ist.getSeconds()).padStart(2, '0');
@@ -121,8 +123,8 @@ function initCareerTabs() {
 }
 
 // --- GitHub Activity & Latest Commit ---
-const GITHUB_USER = 'abhijeetydv';
-const GITHUB_REPO = 'ay_x';
+const GITHUB_USER = (document.body && document.body.dataset.githubUser) || 'abhijeetydv';
+const GITHUB_REPO = (document.body && document.body.dataset.githubRepo) || 'ay_x';
 
 const LANG_COLORS = {
     JavaScript: '#f9e2af',
