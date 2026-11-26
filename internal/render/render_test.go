@@ -315,3 +315,29 @@ func TestHeaderLogoPaths(t *testing.T) {
 		}
 	}
 }
+
+func TestHomeMoreAboutLink(t *testing.T) {
+	data, err := loader.LoadAll(filepath.Join("..", "validate", "testdata", "valid"))
+	if err != nil {
+		t.Fatalf("LoadAll fixture failed: %v", err)
+	}
+	if err := validate.Homepage(data); err != nil {
+		t.Fatalf("validate.Homepage failed: %v", err)
+	}
+
+	outDir := t.TempDir()
+	templateDir := filepath.Join("..", "..", "templates")
+	rootDir := filepath.Join("..", "..")
+	if err := render.BuildSite(templateDir, rootDir, outDir, data); err != nil {
+		t.Fatalf("BuildSite failed: %v", err)
+	}
+
+	raw, err := os.ReadFile(filepath.Join(outDir, "index.html"))
+	if err != nil {
+		t.Fatalf("reading index.html: %v", err)
+	}
+	re := regexp.MustCompile(`<a href="about\.html" class="social-link more-link">\s*` + regexp.QuoteMeta(data.Hero.MoreLink.Label) + `\s*</a>`)
+	if !re.Match(raw) {
+		t.Errorf("index.html missing about.html link with label %q", data.Hero.MoreLink.Label)
+	}
+}
