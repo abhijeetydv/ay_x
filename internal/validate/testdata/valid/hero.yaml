@@ -9,4 +9,4 @@ bio_parts:
 
 more_link:
   label: "More"
-  href: "#about"
+  href: "about.html"

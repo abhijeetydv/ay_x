@@ -27,4 +27,4 @@ bio_parts:
 
 more_link:
   label: "More about me →"
-  href: "#about"
+  href: "about.html"

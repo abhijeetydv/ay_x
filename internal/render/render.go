@@ -1,6 +1,7 @@
 package render
 
 import (
+	"encoding/xml"
 	"fmt"
 	"html/template"
 	"io"
@@ -13,39 +14,54 @@ import (
 
 // PageSpec describes a single generated HTML page.
 type PageSpec struct {
-	Key      string
-	Template string
-	Output   string
-	Title    func(*model.HomepageData) string
+	Key           string
+	Template      string
+	Output        string
+	CanonicalPath string
+	PathSegments  func(*model.HomepageData) []string
+	Title         func(*model.HomepageData) string
+	Description   func(*model.HomepageData) string
 }
 
-// PageContext wraps HomepageData with the active page key and title.
+// PageContext wraps HomepageData with the active page metadata.
 type PageContext struct {
 	*model.HomepageData
-	Page      string
-	PageTitle string
+	Page            string
+	PageTitle       string
+	PageDescription string
+	CanonicalURL    string
+	OGImageURL      string
+	FaviconType     string
+	PathSegments    []string
+	LogoText        string
 }
 
 // DefaultPages returns the configured pages to generate for the site.
 func DefaultPages() []PageSpec {
 	return []PageSpec{
 		{
-			Key:      "home",
-			Template: "home.html",
-			Output:   "index.html",
-			Title:    func(d *model.HomepageData) string { return d.Site.Title },
+			Key:           "home",
+			Template:      "home.html",
+			Output:        "index.html",
+			CanonicalPath: "",
+			Title:         func(d *model.HomepageData) string { return d.Site.Title },
+			Description:   func(d *model.HomepageData) string { return d.Site.Description },
 		},
 		{
-			Key:      "about",
-			Template: "about.html",
-			Output:   "about.html",
-			Title:    func(d *model.HomepageData) string { return d.AboutPage.Title },
+			Key:           "about",
+			Template:      "about.html",
+			Output:        "about.html",
+			CanonicalPath: "about.html",
+			Title:         func(d *model.HomepageData) string { return d.AboutPage.Title },
+			Description:   func(d *model.HomepageData) string { return d.AboutPage.Description },
 		},
 		{
-			Key:      "projects",
-			Template: "projects.html",
-			Output:   "projects.html",
-			Title:    func(d *model.HomepageData) string { return d.Projects.Page.Title },
+			Key:           "projects",
+			Template:      "projects.html",
+			Output:        "projects.html",
+			CanonicalPath: "projects.html",
+			Title:         func(d *model.HomepageData) string { return d.Projects.Page.Title },
+			Description:   func(d *model.HomepageData) string { return d.Projects.Page.Description },
 		},
 	}
 }
@@ -70,18 +86,104 @@ func BuildPages(templateDir, rootDir, outDir string, data *model.HomepageData, p
 				title = t
 			}
 		}
+		desc := data.Site.Description
+		if p.Description != nil {
+			if d := p.Description(data); d != "" {
+				desc = d
+			}
+		}
 		tmplPath := filepath.Join(templateDir, p.Template)
 		outHTML := filepath.Join(outDir, p.Output)
+		segments := resolvePathSegments(data, p)
 		if err := renderPage(tmplPath, outHTML, PageContext{
-			HomepageData: data,
-			Page:         p.Key,
-			PageTitle:    title,
+			HomepageData:    data,
+			Page:            p.Key,
+			PageTitle:       title,
+			PageDescription: desc,
+			CanonicalURL:    data.Site.URL + p.CanonicalPath,
+			OGImageURL:      data.Site.URL + strings.TrimPrefix(filepath.ToSlash(data.Site.OGImage), "/"),
+			FaviconType:     faviconMIMEType(data.Site.Favicon),
+			PathSegments:    segments,
+			LogoText:        data.Site.Nav.Logo + strings.Join(segments, "/"),
 		}); err != nil {
 			return err
 		}
 	}
 
+	if err := writeSitemap(filepath.Join(outDir, "sitemap.xml"), data.Site.URL, pages); err != nil {
+		return err
+	}
+	if err := writeRobots(filepath.Join(outDir, "robots.txt"), data.Site.URL); err != nil {
+		return err
+	}
+
 	return copyStaticAssets(rootDir, outDir)
+}
+
+type sitemapURLSet struct {
+	XMLName xml.Name     `xml:"urlset"`
+	Xmlns   string       `xml:"xmlns,attr"`
+	URLs    []sitemapURL `xml:"url"`
+}
+
+type sitemapURL struct {
+	Loc string `xml:"loc"`
+}
+
+func writeSitemap(outPath, baseURL string, pages []PageSpec) error {
+	urls := make([]sitemapURL, 0, len(pages))
+	for _, p := range pages {
+		urls = append(urls, sitemapURL{Loc: baseURL + p.CanonicalPath})
+	}
+	payload := sitemapURLSet{
+		Xmlns: "http://www.sitemaps.org/schemas/sitemap/0.9",
+		URLs:  urls,
+	}
+	body, err := xml.MarshalIndent(payload, "", "  ")
+	if err != nil {
+		return fmt.Errorf("marshaling sitemap.xml: %w", err)
+	}
+	content := append([]byte(xml.Header), body...)
+	content = append(content, '\n')
+	if err := os.WriteFile(outPath, content, 0o644); err != nil {
+		return fmt.Errorf("writing %s: %w", outPath, err)
+	}
+	return nil
+}
+
+func writeRobots(outPath, baseURL string) error {
+	content := fmt.Sprintf("User-agent: *\nAllow: /\n\nSitemap: %ssitemap.xml\n", baseURL)
+	if err := os.WriteFile(outPath, []byte(content), 0o644); err != nil {
+		return fmt.Errorf("writing %s: %w", outPath, err)
+	}
+	return nil
+}
+
+func resolvePathSegments(data *model.HomepageData, p PageSpec) []string {
+	if p.PathSegments != nil {
+		return p.PathSegments(data)
+	}
+	if seg := data.Site.Nav.PagePaths[p.Key]; seg != "" {
+		return []string{seg}
+	}
+	return nil
+}
+
+func faviconMIMEType(path string) string {
+	switch strings.ToLower(filepath.Ext(path)) {
+	case ".png":
+		return "image/png"
+	case ".svg":
+		return "image/svg+xml"
+	case ".ico":
+		return "image/x-icon"
+	case ".jpg", ".jpeg":
+		return "image/jpeg"
+	case ".webp":
+		return "image/webp"
+	default:
+		return ""
+	}
 }
 
 // BuildHomepage renders templates/home.html using data into outDir/index.html

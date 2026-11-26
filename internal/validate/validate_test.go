@@ -67,3 +67,25 @@ func TestDuplicateProjectIDRejected(t *testing.T) {
 		t.Fatal("expected validation error for duplicate project id, got nil")
 	}
 }
+
+func TestNonHTTPSBaseURLRejected(t *testing.T) {
+	data, err := loader.LoadAll("testdata/valid")
+	if err != nil {
+		t.Fatalf("LoadAll failed: %v", err)
+	}
+	data.Site.URL = "http://example.com/"
+	if err := validate.Homepage(data); err == nil {
+		t.Fatal("expected validation error for non-https site.url, got nil")
+	}
+}
+
+func TestMissingOGImageRejected(t *testing.T) {
+	data, err := loader.LoadAll("testdata/valid")
+	if err != nil {
+		t.Fatalf("LoadAll failed: %v", err)
+	}
+	data.Site.OGImage = "assets/does-not-exist.png"
+	if err := validate.Homepage(data); err == nil {
+		t.Fatal("expected validation error for missing og_image, got nil")
+	}
+}

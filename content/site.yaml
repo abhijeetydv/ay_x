@@ -1,9 +1,21 @@
 title: "Abhijeet — Backend Engineer"
+name: "Abhijeet Yadav"
 lang: "en"
+locale: "en_US"
+url: "https://abhijeetydv.github.io/ay_x/"
+description: "Backend engineer building robust, scalable APIs and distributed systems with Go, Node.js, Python, PostgreSQL, and Redis."
+og_image: "assets/preview.jpeg"
+og_image_alt: "Abhijeet Yadav — Backend Engineer portfolio preview"
+favicon: "assets/favicon.jpeg"
+theme_color: "#000000"
 
 nav:
   logo: "~/"
   logo_href: "index.html"
+  page_paths:
+    home: ""
+    about: "about"
+    projects: "projects"
   links:
     - label: "About"
       href: "about.html"

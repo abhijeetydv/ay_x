@@ -32,6 +32,7 @@
     --font-sans: 'Courier New', 'Lucida Console', 'Monaco', 'Consolas';
     --width-content: 1140px;
     --width-wide: 1280px;
+    --page-fade-duration: 400ms;
 }
 
 /* --- Reset & Base --- */
@@ -56,7 +57,10 @@ body {
     background: var(--bg-base);
     color: var(--text-primary);
     line-height: 1.7;
-    height: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+    height: 100vh;
+    height: 100dvh;
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -102,6 +106,8 @@ a {
 }
 
 .main-content {
+    flex: 1 0 auto;
+    width: 100%;
     padding-top: 20px;
     padding-bottom: 0;
 }
@@ -109,6 +115,8 @@ a {
 /* Scrollable wrapper with viewport-fixed top fade */
 .scroll-fade-wrapper {
     flex: 1;
+    display: flex;
+    flex-direction: column;
     overflow-y: auto;
     overflow-x: hidden;
     scroll-behavior: smooth;
@@ -124,11 +132,18 @@ a {
     );
 }
 
+.scroll-fade-wrapper > .container-wide {
+    width: 100%;
+    flex-shrink: 0;
+    margin-top: auto;
+}
+
 /* --- Seamless Sticky Nav --- */
 .sticky-nav {
     flex-shrink: 0;
     z-index: 100;
     background: transparent;
+    view-transition-name: site-header;
 }
 
 /* --- Navigation --- */
@@ -1191,4 +1206,26 @@ a {
 ::selection {
     background: var(--accent);
     color: var(--bg-base);
+}
+
+/* --- Cross-Document View Transitions --- */
+@view-transition {
+    navigation: auto;
+}
+
+::view-transition-old(root),
+::view-transition-new(root),
+::view-transition-group(site-header),
+::view-transition-old(site-header),
+::view-transition-new(site-header) {
+    animation-duration: var(--page-fade-duration);
+    animation-timing-function: ease-in-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    ::view-transition-group(*),
+    ::view-transition-old(*),
+    ::view-transition-new(*) {
+        animation: none !important;
+    }
 }

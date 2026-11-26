@@ -1,9 +1,21 @@
 title: "Fixture — Portfolio"
+name: "Test User"
 lang: "en"
+locale: "en_US"
+url: "https://example.com/portfolio/"
+description: "Fixture portfolio homepage description."
+og_image: "assets/preview.jpeg"
+og_image_alt: "Fixture preview image"
+favicon: "assets/favicon.jpeg"
+theme_color: "#000000"
 
 nav:
   logo: "~/"
   logo_href: "index.html"
+  page_paths:
+    home: ""
+    about: "about"
+    projects: "projects"
   links:
     - label: "About"
       href: "about.html"

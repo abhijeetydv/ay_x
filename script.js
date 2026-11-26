@@ -5,7 +5,6 @@
 
 document.addEventListener('DOMContentLoaded', () => {
     initClock();
-    initFooterClock();
     initSmoothScroll();
     initNavHighlight();
     initCareerTabs();
@@ -36,26 +35,77 @@ function initClock() {
     setInterval(updateTime, 1000);
 }
 
-// --- Footer Live Clock ---
-function initFooterClock() {
-    const el = document.getElementById('footer-time');
-    if (!el || !CONFIG_TIMEZONE) return;
+// --- Footer Time-on-Site Timer ---
+const SESSION_START_KEY = 'portfolio:sessionStart';
+const SESSION_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
-    function updateFooterTime() {
+function formatElapsed(ms) {
+    const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    const mm = String(minutes).padStart(2, '0');
+    const ss = String(seconds).padStart(2, '0');
+    if (hours > 0) {
+        return `${hours}:${mm}:${ss}`;
+    }
+    return `${mm}:${ss}`;
+}
+
+function getOrInitSessionStart(nowMs, storage) {
+    if (storage) {
         try {
-            const now = new Date();
-            const ist = new Date(now.toLocaleString('en-US', { timeZone: CONFIG_TIMEZONE }));
-            const hours = String(ist.getHours()).padStart(2, '0');
-            const minutes = String(ist.getMinutes()).padStart(2, '0');
-            const seconds = String(ist.getSeconds()).padStart(2, '0');
-            el.textContent = `${hours}:${minutes}:${seconds}`;
+            const raw = storage.getItem(SESSION_START_KEY);
+            if (raw !== null && raw !== '') {
+                const parsed = Number(raw);
+                if (Number.isFinite(parsed) && parsed <= nowMs && (nowMs - parsed) <= SESSION_MAX_AGE_MS) {
+                    return parsed;
+                }
+            }
+            storage.setItem(SESSION_START_KEY, String(nowMs));
         } catch {
-            // Keep existing text if timezone is invalid
+            // Fall back to in-memory start time if sessionStorage is unavailable
         }
     }
+    return nowMs;
+}
 
-    updateFooterTime();
-    setInterval(updateFooterTime, 1000);
+function initFooterTimer() {
+    const el = document.getElementById('footer-time');
+    if (!el) return;
+
+    let storage = null;
+    try {
+        storage = window.sessionStorage;
+    } catch {
+        storage = null;
+    }
+
+    const startMs = getOrInitSessionStart(Date.now(), storage);
+    let timerId = null;
+
+    function updateTimer() {
+        const currentEl = document.getElementById('footer-time');
+        if (!currentEl) {
+            if (timerId !== null) clearInterval(timerId);
+            return;
+        }
+        currentEl.textContent = formatElapsed(Date.now() - startMs);
+    }
+
+    updateTimer();
+    timerId = setInterval(updateTimer, 1000);
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            updateTimer();
+        }
+    });
+    window.addEventListener('pageshow', updateTimer);
+}
+
+if (typeof document !== 'undefined') {
+    initFooterTimer();
 }
 
 // --- Smooth Scroll for Nav Links ---

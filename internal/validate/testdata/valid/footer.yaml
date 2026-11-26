@@ -1,5 +1,6 @@
 copyright: "© 2026 Test"
 status: "OK"
+timer_label: "Time on site"
 commit:
   sha: "abc1234"
   url: "https://github.com/testuser/testrepo/commit/abc1234"
