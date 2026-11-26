@@ -212,24 +212,26 @@
 {{define "section_bottom_grid"}}
         <!-- Bottom Grid: Latest Posts -->
         <section class="bottom-grid">
-            <div class="info-card posts-card" id="blog">
+            <div class="info-card posts-card">
                 <div class="posts-header">
                     <h3 class="info-card-title">
                         {{.Posts.HomeTile.Title}}
                     </h3>
                     {{if .Posts.HomeTile.AllPostsHref}}
-                    <a href="{{.Posts.HomeTile.AllPostsHref}}" class="posts-external">↗</a>
+                    <a href="{{.Posts.HomeTile.AllPostsHref}}" class="posts-external">{{.Posts.HomeTile.AllPostsLabel}}</a>
                     {{end}}
                 </div>
+                {{if .LatestPost}}
                 <div class="posts-list">
-                    {{range .SortedPosts}}
-                    <a href="{{.URL}}" class="post-item">
-                        <span class="post-title">{{.Title}}</span>
+                    <a href="{{.LatestPost.URL}}" class="post-item"{{if .LatestPost.External}} target="_blank" rel="noopener noreferrer"{{end}}>
+                        <span class="post-title">{{.LatestPost.Title}}</span>
                         <span class="post-dots"></span>
-                        <span class="post-date">{{.FormattedDate}}</span>
+                        <span class="post-date">{{.LatestPost.FormattedDate}}</span>
                     </a>
-                    {{end}}
                 </div>
+                {{else}}
+                <p class="empty-state">{{.Posts.Page.EmptyMessage}}</p>
+                {{end}}
             </div>
 
             <div class="info-card github-card">

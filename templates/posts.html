@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="{{.Site.Lang}}">
+{{template "head" .}}
+<body data-github-user="{{.Site.GitHub.Username}}" data-github-repo="{{.Site.GitHub.Repo}}" data-timezone="{{.About.Location.Timezone}}">
+{{template "header" .}}
+
+    <div class="scroll-fade-wrapper">
+        <div class="container main-content">
+            <section class="page-header">
+                <a href="{{.Posts.Page.BackHref}}" class="back-link">{{.Posts.Page.BackLabel}}</a>
+                <h1 class="page-title">{{.Posts.Page.Heading}}</h1>
+                <p class="page-intro">{{.Posts.Page.Intro}}</p>
+            </section>
+
+            <section class="posts-page-section">
+                {{if .SortedPosts}}
+                <div class="posts-page-list">
+                    {{range .SortedPosts}}
+                    <article class="info-card post-card">
+                        <div class="post-card-header">
+                            <h2 class="post-card-heading">
+                                <a href="{{.URL}}" class="post-card-title"{{if .External}} target="_blank" rel="noopener noreferrer"{{end}}>{{.Title}}</a>
+                            </h2>
+                            <span class="post-date">{{.FormattedDate}}</span>
+                        </div>
+                        {{if .Summary}}
+                        <p class="post-card-summary">{{.Summary}}</p>
+                        {{end}}
+                        {{if .Tags}}
+                        <div class="project-tags">
+                            {{range .Tags}}
+                            <span class="tag">{{.}}</span>
+                            {{end}}
+                        </div>
+                        {{end}}
+                    </article>
+                    {{end}}
+                </div>
+                {{else}}
+                <div class="info-card">
+                    <p class="empty-state">{{.Posts.Page.EmptyMessage}}</p>
+                </div>
+                {{end}}
+            </section>
+        </div>
+
+{{template "footer" .}}
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

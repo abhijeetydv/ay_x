@@ -548,6 +548,56 @@ a {
     padding: 12px 0 48px;
 }
 
+/* --- Posts Page --- */
+.posts-page-section {
+    padding: 12px 0 48px;
+}
+
+.posts-page-list {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.post-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.post-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.post-card-heading {
+    font-size: 1.05rem;
+    font-weight: 600;
+}
+
+.post-card-title {
+    color: var(--text-primary);
+    transition: color 0.2s ease;
+}
+
+.post-card-title:hover {
+    color: var(--accent-hover);
+}
+
+.post-card-summary {
+    font-size: 0.84rem;
+    color: var(--text-secondary);
+    line-height: 1.7;
+}
+
+.empty-state {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
 /* --- About Page --- */
 .about-section {
     padding: 8px 0 48px;

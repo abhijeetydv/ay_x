@@ -16,6 +16,7 @@ nav:
     home: ""
     about: "about"
     projects: "projects"
+    posts: "posts"
   links:
     - label: "About"
       href: "about.html"
@@ -23,6 +24,9 @@ nav:
     - label: "Projects"
       href: "projects.html"
       page: "projects"
+    - label: "Posts"
+      href: "posts.html"
+      page: "posts"
 
 sections:
   - key: "hero"

@@ -126,7 +126,7 @@ func validateSite(s *model.SiteConfig, errs *[]string) {
 	if s.Nav.LogoHref != "" && !isSafeHref(s.Nav.LogoHref) {
 		*errs = append(*errs, fmt.Sprintf("site.yaml: invalid nav.logo_href %q", s.Nav.LogoHref))
 	}
-	for _, requiredKey := range []string{"home", "about", "projects"} {
+	for _, requiredKey := range []string{"home", "about", "projects", "posts"} {
 		if _, ok := s.Nav.PagePaths[requiredKey]; !ok {
 			*errs = append(*errs, fmt.Sprintf("site.yaml: nav.page_paths.%s is required", requiredKey))
 		}

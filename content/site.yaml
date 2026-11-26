@@ -16,6 +16,7 @@ nav:
     home: ""
     about: "about"
     projects: "projects"
+    posts: "posts"
   links:
     - label: "About"
       href: "about.html"
@@ -23,8 +24,9 @@ nav:
     - label: "Projects"
       href: "projects.html"
       page: "projects"
-    - label: "Blog"
-      href: "#blog"
+    - label: "Posts"
+      href: "posts.html"
+      page: "posts"
     - label: "Contact"
       href: "#contact"
 

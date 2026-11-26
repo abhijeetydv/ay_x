@@ -11,7 +11,7 @@ page:
 home_tile:
   title: "Latest Posts"
   all_posts_label: "All posts →"
-  all_posts_href: "#"
+  all_posts_href: "posts.html"
 
 # placeholder - edit me
 items:
