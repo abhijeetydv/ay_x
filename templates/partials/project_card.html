@@ -1,0 +1,32 @@
+{{define "project_card"}}
+                <div class="project-card">
+                    <div class="project-terminal">
+                        <div class="terminal-header">
+                            <div class="terminal-dots">
+                                <span class="dot red"></span>
+                                <span class="dot yellow"></span>
+                                <span class="dot green"></span>
+                            </div>
+                            <div class="terminal-meta">
+                                <span class="stars-count">{{.Stars}}</span>
+                                <span class="star-icon">★</span>
+                            </div>
+                        </div>
+                        <div class="terminal-body">
+                            <p class="project-repo"><span class="repo-owner">{{.Owner}}</span> / <span class="repo-name">{{.Repo}}</span></p>
+                            <p class="project-desc">{{.TerminalDesc}}</p>
+                        </div>
+                    </div>
+                    <div class="project-details">
+                        <h3 class="project-title">{{.Title}}</h3>
+                        <p class="project-summary">{{.Summary}}</p>
+                        {{if .Tags}}
+                        <div class="project-tags">
+                            {{range .Tags}}
+                            <span class="tag">{{.}}</span>
+                            {{end}}
+                        </div>
+                        {{end}}
+                    </div>
+                </div>
+{{end}}

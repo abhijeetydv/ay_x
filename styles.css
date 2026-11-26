@@ -498,6 +498,41 @@ a {
     gap: 24px;
 }
 
+/* --- Subpage Header & Projects Page --- */
+.page-header {
+    padding: 48px 0 28px;
+}
+
+.back-link {
+    display: inline-block;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+    transition: color 0.2s ease;
+}
+
+.back-link:hover {
+    color: var(--accent);
+}
+
+.page-title {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.8px;
+    margin-bottom: 10px;
+}
+
+.page-intro {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    max-width: 640px;
+    line-height: 1.75;
+}
+
+.projects-page-section {
+    padding: 12px 0 48px;
+}
+
 .project-card {
     background: var(--bg-card);
     border: 1px solid var(--border);

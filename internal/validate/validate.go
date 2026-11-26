@@ -68,16 +68,20 @@ func Homepage(data *model.HomepageData) error {
 		}
 	}
 
-	// Build sorted featured projects list.
-	featured := make([]model.ProjectItem, 0, len(data.Projects.Items))
-	for _, p := range data.Projects.Items {
+	// Build sorted all projects and featured projects lists.
+	allProjects := make([]model.ProjectItem, len(data.Projects.Items))
+	copy(allProjects, data.Projects.Items)
+	sort.SliceStable(allProjects, func(i, j int) bool {
+		return allProjects[i].Order < allProjects[j].Order
+	})
+	data.AllProjects = allProjects
+
+	featured := make([]model.ProjectItem, 0, len(allProjects))
+	for _, p := range allProjects {
 		if p.Featured {
 			featured = append(featured, p)
 		}
 	}
-	sort.SliceStable(featured, func(i, j int) bool {
-		return featured[i].Order < featured[j].Order
-	})
 	data.FeaturedProjects = featured
 
 	return nil
@@ -184,8 +188,26 @@ func validateProjects(p *model.ProjectsConfig, errs *[]string) {
 	if strings.TrimSpace(p.Title) == "" {
 		*errs = append(*errs, "projects.yaml: title is required")
 	}
-	if p.ViewAll.Href != "" && !isSafeHref(p.ViewAll.Href) {
+	if strings.TrimSpace(p.ViewAll.Label) == "" {
+		*errs = append(*errs, "projects.yaml: view_all.label is required")
+	}
+	if !isSafeHref(p.ViewAll.Href) {
 		*errs = append(*errs, fmt.Sprintf("projects.yaml: view_all.href %q is invalid", p.ViewAll.Href))
+	}
+	if strings.TrimSpace(p.Page.Title) == "" {
+		*errs = append(*errs, "projects.yaml: page.title is required")
+	}
+	if strings.TrimSpace(p.Page.Heading) == "" {
+		*errs = append(*errs, "projects.yaml: page.heading is required")
+	}
+	if strings.TrimSpace(p.Page.Intro) == "" {
+		*errs = append(*errs, "projects.yaml: page.intro is required")
+	}
+	if strings.TrimSpace(p.Page.BackLabel) == "" {
+		*errs = append(*errs, "projects.yaml: page.back_label is required")
+	}
+	if !isSafeHref(p.Page.BackHref) {
+		*errs = append(*errs, fmt.Sprintf("projects.yaml: page.back_href %q is invalid", p.Page.BackHref))
 	}
 	seenIDs := map[string]bool{}
 	for i, item := range p.Items {

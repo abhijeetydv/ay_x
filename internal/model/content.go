@@ -108,12 +108,22 @@ type ProjectItem struct {
 	Order        int      `yaml:"order"`
 }
 
+// ProjectsPageConfig holds metadata and copy for projects.html.
+type ProjectsPageConfig struct {
+	Title     string `yaml:"title"`
+	Heading   string `yaml:"heading"`
+	Intro     string `yaml:"intro"`
+	BackLabel string `yaml:"back_label"`
+	BackHref  string `yaml:"back_href"`
+}
+
 // ProjectsConfig represents content/projects.yaml.
 type ProjectsConfig struct {
-	Title   string        `yaml:"title"`
-	Icon    string        `yaml:"icon"`
-	ViewAll Link          `yaml:"view_all"`
-	Items   []ProjectItem `yaml:"items"`
+	Title   string             `yaml:"title"`
+	Icon    string             `yaml:"icon"`
+	ViewAll Link               `yaml:"view_all"`
+	Page    ProjectsPageConfig `yaml:"page"`
+	Items   []ProjectItem      `yaml:"items"`
 }
 
 // SkillsConfig represents content/skills.yaml.
@@ -214,6 +224,7 @@ type HomepageData struct {
 	Experience       ExperienceConfig
 	Projects         ProjectsConfig
 	FeaturedProjects []ProjectItem
+	AllProjects      []ProjectItem
 	Skills           SkillsConfig
 	About            AboutConfig
 	Footer           FooterConfig

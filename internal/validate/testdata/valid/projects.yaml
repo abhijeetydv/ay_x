@@ -2,7 +2,14 @@ title: "Featured Projects"
 icon: "*"
 view_all:
   label: "View all"
-  href: "#"
+  href: "projects.html"
+
+page:
+  title: "Projects — Fixture"
+  heading: "All Projects"
+  intro: "All fixture projects."
+  back_label: "← Back to home"
+  back_href: "index.html"
 
 items:
   - id: "proj-1"

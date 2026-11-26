@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="{{.Site.Lang}}">
+{{template "head" .}}
+<body data-github-user="{{.Site.GitHub.Username}}" data-github-repo="{{.Site.GitHub.Repo}}" data-timezone="{{.About.Location.Timezone}}">
+{{template "header" .}}
+
+    <div class="scroll-fade-wrapper">
+        <div class="container main-content">
+            <section class="page-header">
+                <a href="{{.Projects.Page.BackHref}}" class="back-link">{{.Projects.Page.BackLabel}}</a>
+                <h1 class="page-title">{{.Projects.Page.Heading}}</h1>
+                <p class="page-intro">{{.Projects.Page.Intro}}</p>
+            </section>
+
+            <section class="projects-page-section">
+                <div class="projects-grid">
+                    {{range .AllProjects}}
+                    {{template "project_card" .}}
+                    {{end}}
+                </div>
+            </section>
+        </div>
+
+{{template "footer" .}}
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
