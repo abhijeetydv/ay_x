@@ -4,6 +4,7 @@ bar:
     active: true
 
 tabs:
+  aria_label: "Work Experience and Education"
   work_label: "Work"
   education_label: "Education"
   work:

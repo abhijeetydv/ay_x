@@ -80,6 +80,7 @@ type CareerEntry struct {
 
 // CareerTabsConfig holds tabbed work experience and education data.
 type CareerTabsConfig struct {
+	AriaLabel      string        `yaml:"aria_label"`
 	WorkLabel      string        `yaml:"work_label"`
 	EducationLabel string        `yaml:"education_label"`
 	Work           []CareerEntry `yaml:"work"`

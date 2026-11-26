@@ -160,6 +160,9 @@ func validateExperience(e *model.ExperienceConfig, errs *[]string) {
 			*errs = append(*errs, fmt.Sprintf("experience.yaml: bar[%d] requires abbr and name", i))
 		}
 	}
+	if strings.TrimSpace(e.Tabs.AriaLabel) == "" {
+		*errs = append(*errs, "experience.yaml: tabs.aria_label is required")
+	}
 	if strings.TrimSpace(e.Tabs.WorkLabel) == "" {
 		*errs = append(*errs, "experience.yaml: tabs.work_label is required")
 	}

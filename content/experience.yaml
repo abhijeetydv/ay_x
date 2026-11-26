@@ -13,6 +13,7 @@ bar:
     tag: "(Contrib)"
 
 tabs:
+  aria_label: "Work Experience and Education"
   work_label: "Work Experience"
   education_label: "Education"
   work:
