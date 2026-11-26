@@ -89,3 +89,47 @@ func TestMissingOGImageRejected(t *testing.T) {
 		t.Fatal("expected validation error for missing og_image, got nil")
 	}
 }
+
+func TestBadPostDateRejected(t *testing.T) {
+	data, err := loader.LoadAll("testdata/valid")
+	if err != nil {
+		t.Fatalf("LoadAll failed: %v", err)
+	}
+	data.Posts.Items[0].Date = "2026/01/10"
+	if err := validate.Homepage(data); err == nil {
+		t.Fatal("expected validation error for bad post date, got nil")
+	}
+}
+
+func TestDuplicatePostIDRejected(t *testing.T) {
+	data, err := loader.LoadAll("testdata/valid")
+	if err != nil {
+		t.Fatalf("LoadAll failed: %v", err)
+	}
+	data.Posts.Items[1].ID = data.Posts.Items[0].ID
+	if err := validate.Homepage(data); err == nil {
+		t.Fatal("expected validation error for duplicate post id, got nil")
+	}
+}
+
+func TestInvalidContactEmailRejected(t *testing.T) {
+	data, err := loader.LoadAll("testdata/valid")
+	if err != nil {
+		t.Fatalf("LoadAll failed: %v", err)
+	}
+	data.Contact.Email.Address = "not-an-email"
+	if err := validate.Homepage(data); err == nil {
+		t.Fatal("expected validation error for invalid contact email, got nil")
+	}
+}
+
+func TestUnsafePostURLRejected(t *testing.T) {
+	data, err := loader.LoadAll("testdata/valid")
+	if err != nil {
+		t.Fatalf("LoadAll failed: %v", err)
+	}
+	data.Posts.Items[0].URL = "javascript:alert(1)"
+	if err := validate.Homepage(data); err == nil {
+		t.Fatal("expected validation error for unsafe post URL, got nil")
+	}
+}
