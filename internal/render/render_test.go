@@ -377,3 +377,34 @@ func TestFooterTimerAndLocationClock(t *testing.T) {
 		t.Errorf("index.html: missing location clock #current-time")
 	}
 }
+
+func TestHomeConnectAndPostsLinks(t *testing.T) {
+	data, err := loader.LoadAll(filepath.Join("..", "validate", "testdata", "valid"))
+	if err != nil {
+		t.Fatalf("LoadAll fixture failed: %v", err)
+	}
+	if err := validate.Homepage(data); err != nil {
+		t.Fatalf("validate.Homepage failed: %v", err)
+	}
+
+	outDir := t.TempDir()
+	templateDir := filepath.Join("..", "..", "templates")
+	rootDir := filepath.Join("..", "..")
+	if err := render.BuildSite(templateDir, rootDir, outDir, data); err != nil {
+		t.Fatalf("BuildSite failed: %v", err)
+	}
+
+	raw, err := os.ReadFile(filepath.Join(outDir, "index.html"))
+	if err != nil {
+		t.Fatalf("reading index.html: %v", err)
+	}
+
+	connectRe := regexp.MustCompile(`<a href="contact\.html" class="connect-btn">\s*` + regexp.QuoteMeta(data.About.Connect.CTALabel) + `\s*</a>`)
+	if !connectRe.Match(raw) {
+		t.Errorf("index.html missing connect-btn link to contact.html with label %q", data.About.Connect.CTALabel)
+	}
+	postsRe := regexp.MustCompile(`<a href="posts\.html" class="posts-external">\s*` + regexp.QuoteMeta(data.Posts.HomeTile.AllPostsLabel) + `\s*</a>`)
+	if !postsRe.Match(raw) {
+		t.Errorf("index.html missing posts-external link to posts.html with label %q", data.Posts.HomeTile.AllPostsLabel)
+	}
+}
