@@ -1,0 +1,12 @@
+greeting: "Hello"
+name: "Test User"
+
+bio_parts:
+  - text: "I build "
+  - text: "Go"
+    href: "#"
+  - text: " services."
+
+more_link:
+  label: "More"
+  href: "#about"

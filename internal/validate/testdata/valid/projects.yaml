@@ -1,0 +1,42 @@
+title: "Featured Projects"
+icon: "*"
+view_all:
+  label: "View all"
+  href: "#"
+
+items:
+  - id: "proj-1"
+    owner: "testuser"
+    repo: "proj-1"
+    stars: 10
+    terminal_desc: "First project"
+    title: "Project One"
+    summary: "Summary one."
+    tags:
+      - "go"
+    featured: true
+    order: 1
+
+  - id: "proj-2"
+    owner: "testuser"
+    repo: "proj-2"
+    stars: 20
+    terminal_desc: "Second project"
+    title: "Project Two"
+    summary: "Summary two."
+    tags:
+      - "cli"
+    featured: true
+    order: 2
+
+  - id: "proj-3"
+    owner: "testuser"
+    repo: "proj-3"
+    stars: 5
+    terminal_desc: "Unfeatured project"
+    title: "Project Three"
+    summary: "Summary three."
+    tags:
+      - "misc"
+    featured: false
+    order: 3

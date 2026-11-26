@@ -1,0 +1,33 @@
+title: "Fixture — Portfolio"
+lang: "en"
+
+nav:
+  logo: "~/"
+  logo_href: "/"
+  links:
+    - label: "About"
+      href: "#about"
+
+sections:
+  - key: "hero"
+    enabled: true
+    order: 1
+  - key: "experience_bar"
+    enabled: true
+    order: 2
+  - key: "career"
+    enabled: true
+    order: 3
+  - key: "projects"
+    enabled: true
+    order: 4
+  - key: "info_grid"
+    enabled: true
+    order: 5
+  - key: "bottom_grid"
+    enabled: true
+    order: 6
+
+github:
+  username: "testuser"
+  repo: "testrepo"

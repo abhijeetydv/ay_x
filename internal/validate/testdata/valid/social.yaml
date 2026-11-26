@@ -1,0 +1,9 @@
+hero_links:
+  - platform: "github"
+    label: "GitHub"
+    url: "https://github.com/testuser"
+
+footer_links:
+  - platform: "github"
+    label: "GitHub"
+    url: "https://github.com/testuser"

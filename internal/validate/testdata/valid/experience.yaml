@@ -1,0 +1,18 @@
+bar:
+  - abbr: "Ac"
+    name: "Acme"
+    active: true
+
+tabs:
+  work_label: "Work"
+  education_label: "Education"
+  work:
+    - role: "Engineer"
+      org: "Acme"
+      period: "2024"
+      description: "Built systems."
+  education:
+    - role: "B.Tech"
+      org: "University"
+      period: "2020"
+      description: "CS degree."

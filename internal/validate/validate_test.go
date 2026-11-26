@@ -15,6 +15,29 @@ func TestValidContentDirectory(t *testing.T) {
 	if err := validate.Homepage(data); err != nil {
 		t.Fatalf("Homepage validation failed: %v", err)
 	}
+	if len(data.OrderedSections) == 0 {
+		t.Fatal("expected at least 1 ordered section, got 0")
+	}
+	if len(data.FeaturedProjects) == 0 {
+		t.Fatal("expected at least 1 featured project, got 0")
+	}
+	seenIDs := make(map[string]bool, len(data.Projects.Items))
+	for _, item := range data.Projects.Items {
+		if seenIDs[item.ID] {
+			t.Fatalf("duplicate project ID %q", item.ID)
+		}
+		seenIDs[item.ID] = true
+	}
+}
+
+func TestFixtureContentCounts(t *testing.T) {
+	data, err := loader.LoadAll("testdata/valid")
+	if err != nil {
+		t.Fatalf("LoadAll fixture failed: %v", err)
+	}
+	if err := validate.Homepage(data); err != nil {
+		t.Fatalf("fixture validation failed: %v", err)
+	}
 	if len(data.OrderedSections) != 6 {
 		t.Fatalf("expected 6 ordered sections, got %d", len(data.OrderedSections))
 	}
@@ -24,7 +47,7 @@ func TestValidContentDirectory(t *testing.T) {
 }
 
 func TestInvalidURLRejected(t *testing.T) {
-	data, err := loader.LoadAll("../../content")
+	data, err := loader.LoadAll("testdata/valid")
 	if err != nil {
 		t.Fatalf("LoadAll failed: %v", err)
 	}
@@ -35,7 +58,7 @@ func TestInvalidURLRejected(t *testing.T) {
 }
 
 func TestDuplicateProjectIDRejected(t *testing.T) {
-	data, err := loader.LoadAll("../../content")
+	data, err := loader.LoadAll("testdata/valid")
 	if err != nil {
 		t.Fatalf("LoadAll failed: %v", err)
 	}
