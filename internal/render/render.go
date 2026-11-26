@@ -13,39 +13,51 @@ import (
 
 // PageSpec describes a single generated HTML page.
 type PageSpec struct {
-	Key      string
-	Template string
-	Output   string
-	Title    func(*model.HomepageData) string
+	Key           string
+	Template      string
+	Output        string
+	CanonicalPath string
+	Title         func(*model.HomepageData) string
+	Description   func(*model.HomepageData) string
 }
 
-// PageContext wraps HomepageData with the active page key and title.
+// PageContext wraps HomepageData with the active page metadata.
 type PageContext struct {
 	*model.HomepageData
-	Page      string
-	PageTitle string
+	Page            string
+	PageTitle       string
+	PageDescription string
+	CanonicalURL    string
+	OGImageURL      string
+	FaviconType     string
 }
 
 // DefaultPages returns the configured pages to generate for the site.
 func DefaultPages() []PageSpec {
 	return []PageSpec{
 		{
-			Key:      "home",
-			Template: "home.html",
-			Output:   "index.html",
-			Title:    func(d *model.HomepageData) string { return d.Site.Title },
+			Key:           "home",
+			Template:      "home.html",
+			Output:        "index.html",
+			CanonicalPath: "",
+			Title:         func(d *model.HomepageData) string { return d.Site.Title },
+			Description:   func(d *model.HomepageData) string { return d.Site.Description },
 		},
 		{
-			Key:      "about",
-			Template: "about.html",
-			Output:   "about.html",
-			Title:    func(d *model.HomepageData) string { return d.AboutPage.Title },
+			Key:           "about",
+			Template:      "about.html",
+			Output:        "about.html",
+			CanonicalPath: "about.html",
+			Title:         func(d *model.HomepageData) string { return d.AboutPage.Title },
+			Description:   func(d *model.HomepageData) string { return d.AboutPage.Description },
 		},
 		{
-			Key:      "projects",
-			Template: "projects.html",
-			Output:   "projects.html",
-			Title:    func(d *model.HomepageData) string { return d.Projects.Page.Title },
+			Key:           "projects",
+			Template:      "projects.html",
+			Output:        "projects.html",
+			CanonicalPath: "projects.html",
+			Title:         func(d *model.HomepageData) string { return d.Projects.Page.Title },
+			Description:   func(d *model.HomepageData) string { return d.Projects.Page.Description },
 		},
 	}
 }
@@ -70,18 +82,45 @@ func BuildPages(templateDir, rootDir, outDir string, data *model.HomepageData, p
 				title = t
 			}
 		}
+		desc := data.Site.Description
+		if p.Description != nil {
+			if d := p.Description(data); d != "" {
+				desc = d
+			}
+		}
 		tmplPath := filepath.Join(templateDir, p.Template)
 		outHTML := filepath.Join(outDir, p.Output)
 		if err := renderPage(tmplPath, outHTML, PageContext{
-			HomepageData: data,
-			Page:         p.Key,
-			PageTitle:    title,
+			HomepageData:    data,
+			Page:            p.Key,
+			PageTitle:       title,
+			PageDescription: desc,
+			CanonicalURL:    data.Site.URL + p.CanonicalPath,
+			OGImageURL:      data.Site.URL + strings.TrimPrefix(filepath.ToSlash(data.Site.OGImage), "/"),
+			FaviconType:     faviconMIMEType(data.Site.Favicon),
 		}); err != nil {
 			return err
 		}
 	}
 
 	return copyStaticAssets(rootDir, outDir)
+}
+
+func faviconMIMEType(path string) string {
+	switch strings.ToLower(filepath.Ext(path)) {
+	case ".png":
+		return "image/png"
+	case ".svg":
+		return "image/svg+xml"
+	case ".ico":
+		return "image/x-icon"
+	case ".jpg", ".jpeg":
+		return "image/jpeg"
+	case ".webp":
+		return "image/webp"
+	default:
+		return ""
+	}
 }
 
 // BuildHomepage renders templates/home.html using data into outDir/index.html
