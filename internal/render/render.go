@@ -73,6 +73,14 @@ func DefaultPages() []PageSpec {
 			Title:         func(d *model.HomepageData) string { return d.Posts.Page.Title },
 			Description:   func(d *model.HomepageData) string { return d.Posts.Page.Description },
 		},
+		{
+			Key:           "contact",
+			Template:      "contact.html",
+			Output:        "contact.html",
+			CanonicalPath: "contact.html",
+			Title:         func(d *model.HomepageData) string { return d.Contact.Page.Title },
+			Description:   func(d *model.HomepageData) string { return d.Contact.Page.Description },
+		},
 	}
 }
 
@@ -258,6 +266,10 @@ func renderPage(templatePath, outHTML string, ctx PageContext) error {
 			return template.CSS(fmt.Sprintf("width: %s; background: %s;", width, color))
 		},
 		"lower": strings.ToLower,
+		"isExternal": func(href string) bool {
+			l := strings.ToLower(href)
+			return strings.HasPrefix(l, "http://") || strings.HasPrefix(l, "https://")
+		},
 		"navHref": func(page, href string) string {
 			if page != "home" && strings.HasPrefix(href, "#") {
 				return "index.html" + href

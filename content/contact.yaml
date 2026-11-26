@@ -1,0 +1,20 @@
+page:
+  title: "Contact — Abhijeet"
+  description: "Get in touch with Abhijeet Yadav via email or social channels."
+  heading: "Contact"
+  intro: "Always open to interesting backend engineering projects, technical discussions, and collaborations."
+  back_label: "← Back to home"
+  back_href: "index.html"
+
+email:
+  label: "Direct Email"
+  address: "abhijeet@example.com"
+  link_text: "abhijeet@example.com"
+
+social_heading: "Find me elsewhere"
+
+channels:
+  - label: "Location"
+    value: "India (IST, UTC+05:30)"
+  - label: "Response time"
+    value: "Usually within 24–48 hours"

@@ -271,6 +271,38 @@ type AboutPageConfig struct {
 	ProjectsHref  string     `yaml:"projects_href"`
 }
 
+// ContactPageConfig configures contact.html metadata and copy.
+type ContactPageConfig struct {
+	Title       string `yaml:"title"`
+	Description string `yaml:"description"`
+	Heading     string `yaml:"heading"`
+	Intro       string `yaml:"intro"`
+	BackLabel   string `yaml:"back_label"`
+	BackHref    string `yaml:"back_href"`
+}
+
+// ContactEmailConfig configures the direct email block on contact.html.
+type ContactEmailConfig struct {
+	Label    string `yaml:"label"`
+	Address  string `yaml:"address"`
+	LinkText string `yaml:"link_text"`
+}
+
+// ContactChannel represents an extra contact detail row.
+type ContactChannel struct {
+	Label string `yaml:"label"`
+	Value string `yaml:"value"`
+	Href  string `yaml:"href,omitempty"`
+}
+
+// ContactConfig represents content/contact.yaml.
+type ContactConfig struct {
+	Page          ContactPageConfig  `yaml:"page"`
+	Email         ContactEmailConfig `yaml:"email"`
+	SocialHeading string             `yaml:"social_heading"`
+	Channels      []ContactChannel   `yaml:"channels,omitempty"`
+}
+
 // HomepageData aggregates all validated YAML content for template rendering.
 type HomepageData struct {
 	Site             SiteConfig
@@ -286,6 +318,7 @@ type HomepageData struct {
 	Posts            PostsConfig
 	SortedPosts      []PostEntry
 	LatestPost       *PostEntry
+	Contact          ContactConfig
 	Footer           FooterConfig
 	OrderedSections  []string
 }

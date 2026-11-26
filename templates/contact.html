@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="{{.Site.Lang}}">
+{{template "head" .}}
+<body data-github-user="{{.Site.GitHub.Username}}" data-github-repo="{{.Site.GitHub.Repo}}" data-timezone="{{.About.Location.Timezone}}">
+{{template "header" .}}
+
+    <div class="scroll-fade-wrapper">
+        <div class="container main-content">
+            <section class="page-header">
+                <a href="{{.Contact.Page.BackHref}}" class="back-link">{{.Contact.Page.BackLabel}}</a>
+                <h1 class="page-title">{{.Contact.Page.Heading}}</h1>
+                <p class="page-intro">{{.Contact.Page.Intro}}</p>
+            </section>
+
+            <section class="contact-page-section">
+                <div class="contact-grid">
+                    <div class="info-card contact-card">
+                        <h2 class="info-card-title">{{.Contact.Email.Label}}</h2>
+                        <a href="mailto:{{.Contact.Email.Address}}" class="contact-email-link">{{.Contact.Email.LinkText}}</a>
+                        {{if .Contact.Channels}}
+                        <dl class="contact-channels">
+                            {{range .Contact.Channels}}
+                            <div class="contact-channel">
+                                <dt>{{.Label}}</dt>
+                                <dd>{{if .Href}}<a href="{{.Href}}" class="inline-link"{{if isExternal .Href}} target="_blank" rel="noopener noreferrer"{{end}}>{{.Value}}</a>{{else}}{{.Value}}{{end}}</dd>
+                            </div>
+                            {{end}}
+                        </dl>
+                        {{end}}
+                    </div>
+
+                    <div class="info-card contact-socials-card">
+                        <h2 class="info-card-title">{{.Contact.SocialHeading}}</h2>
+                        <div class="contact-social-list">
+                            {{range .Social.FooterLinks}}
+                            <a href="{{.URL}}" target="_blank" rel="noopener noreferrer" class="social-link contact-social-link">
+                                {{template "social_icon_18" (lower .Platform)}}
+                                <span>{{.Label}}</span>
+                            </a>
+                            {{end}}
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+{{template "footer" .}}
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
