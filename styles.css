@@ -129,6 +129,7 @@ a {
     flex-shrink: 0;
     z-index: 100;
     background: transparent;
+    view-transition-name: site-header;
 }
 
 /* --- Navigation --- */
@@ -1191,4 +1192,23 @@ a {
 ::selection {
     background: var(--accent);
     color: var(--bg-base);
+}
+
+/* --- Cross-Document View Transitions --- */
+@view-transition {
+    navigation: auto;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation-duration: 220ms;
+    animation-timing-function: ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    ::view-transition-group(*),
+    ::view-transition-old(*),
+    ::view-transition-new(*) {
+        animation: none !important;
+    }
 }
