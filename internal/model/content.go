@@ -221,9 +221,10 @@ type FooterCommitConfig struct {
 
 // FooterConfig represents content/footer.yaml.
 type FooterConfig struct {
-	Copyright string             `yaml:"copyright"`
-	Status    string             `yaml:"status"`
-	Commit    FooterCommitConfig `yaml:"commit"`
+	Copyright  string             `yaml:"copyright"`
+	Status     string             `yaml:"status"`
+	TimerLabel string             `yaml:"timer_label"`
+	Commit     FooterCommitConfig `yaml:"commit"`
 }
 
 // FactItem represents a label/value fact on the About page.

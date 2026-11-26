@@ -341,3 +341,39 @@ func TestHomeMoreAboutLink(t *testing.T) {
 		t.Errorf("index.html missing about.html link with label %q", data.Hero.MoreLink.Label)
 	}
 }
+
+func TestFooterTimerAndLocationClock(t *testing.T) {
+	data, err := loader.LoadAll(filepath.Join("..", "validate", "testdata", "valid"))
+	if err != nil {
+		t.Fatalf("LoadAll fixture failed: %v", err)
+	}
+	if err := validate.Homepage(data); err != nil {
+		t.Fatalf("validate.Homepage failed: %v", err)
+	}
+
+	outDir := t.TempDir()
+	templateDir := filepath.Join("..", "..", "templates")
+	rootDir := filepath.Join("..", "..")
+	if err := render.BuildSite(templateDir, rootDir, outDir, data); err != nil {
+		t.Fatalf("BuildSite failed: %v", err)
+	}
+
+	timerRe := regexp.MustCompile(`<span id="footer-time" role="timer" aria-label="` + regexp.QuoteMeta(data.Footer.TimerLabel) + `">00:00</span>`)
+	for _, page := range render.DefaultPages() {
+		raw, err := os.ReadFile(filepath.Join(outDir, page.Output))
+		if err != nil {
+			t.Fatalf("reading %s: %v", page.Output, err)
+		}
+		if !timerRe.Match(raw) {
+			t.Errorf("%s: missing footer timer element with label %q and 00:00 placeholder", page.Output, data.Footer.TimerLabel)
+		}
+	}
+
+	homeRaw, err := os.ReadFile(filepath.Join(outDir, "index.html"))
+	if err != nil {
+		t.Fatalf("reading index.html: %v", err)
+	}
+	if !strings.Contains(string(homeRaw), `<span class="location-time" id="current-time"></span>`) {
+		t.Errorf("index.html: missing location clock #current-time")
+	}
+}

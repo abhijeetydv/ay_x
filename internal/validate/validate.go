@@ -362,6 +362,9 @@ func validateFooter(f *model.FooterConfig, errs *[]string) {
 	if strings.TrimSpace(f.Copyright) == "" {
 		*errs = append(*errs, "footer.yaml: copyright is required")
 	}
+	if strings.TrimSpace(f.TimerLabel) == "" {
+		*errs = append(*errs, "footer.yaml: timer_label is required")
+	}
 	if f.Commit.URL != "" && !isSafeExternalURL(f.Commit.URL) {
 		*errs = append(*errs, fmt.Sprintf("footer.yaml: commit.url %q must be a valid http(s) URL", f.Commit.URL))
 	}
