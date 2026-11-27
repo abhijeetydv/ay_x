@@ -3,6 +3,7 @@ package render
 import (
 	"encoding/xml"
 	"fmt"
+	"hash/fnv"
 	"html/template"
 	"io"
 	"os"
@@ -299,6 +300,12 @@ func rootPrefix(outputPath string) string {
 	return strings.Repeat("../", depth)
 }
 
+func tagColorClass(tag string) string {
+	h := fnv.New32a()
+	_, _ = h.Write([]byte(tag))
+	return fmt.Sprintf("tag-c%d", h.Sum32()%5)
+}
+
 func resolvePathSegments(data *model.HomepageData, p PageSpec) []string {
 	if p.PathSegments != nil {
 		return p.PathSegments(data)
@@ -345,6 +352,7 @@ func renderPage(templatePath, outHTML string, ctx PageContext) error {
 			return template.CSS(fmt.Sprintf("width: %s; background: %s;", width, color))
 		},
 		"lower": strings.ToLower,
+		"tagColor": tagColorClass,
 		"isExternal": func(href string) bool {
 			l := strings.ToLower(href)
 			return strings.HasPrefix(l, "http://") || strings.HasPrefix(l, "https://")

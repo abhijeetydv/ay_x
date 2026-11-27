@@ -29,7 +29,7 @@
                         {{if .Tags}}
                         <div class="project-tags">
                             {{range .Tags}}
-                            <span class="tag">{{.}}</span>
+                            <span class="tag {{tagColor .}}">{{.}}</span>
                             {{end}}
                         </div>
                         {{end}}
