@@ -398,6 +398,15 @@ func validatePosts(p *model.PostsConfig, postItems []model.Post, errs *[]string)
 	if strings.TrimSpace(p.PostPage.CopiedLabel) == "" {
 		*errs = append(*errs, "posts.yaml: post_page.copied_label is required")
 	}
+	if strings.TrimSpace(p.PostPage.ContentsLabel) == "" {
+		*errs = append(*errs, "posts.yaml: post_page.contents_label is required")
+	}
+	if strings.TrimSpace(p.PostPage.ContentsAriaLabel) == "" {
+		*errs = append(*errs, "posts.yaml: post_page.contents_aria_label is required")
+	}
+	if p.PostPage.TOCMinItems < 1 {
+		*errs = append(*errs, "posts.yaml: post_page.toc_min_items must be at least 1")
+	}
 
 	allowedColors := make(map[string]bool, len(model.AllowedTitleColors))
 	sortedAllowed := make([]string, len(model.AllowedTitleColors))

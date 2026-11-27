@@ -207,11 +207,22 @@ type PostsHomeTileConfig struct {
 
 // PostPageConfig configures individual post pages (posts/<slug>/index.html).
 type PostPageConfig struct {
-	BackLabel    string `yaml:"back_label"`
-	BackHref     string `yaml:"back_href"`
-	UpdatedLabel string `yaml:"updated_label"`
-	CopyLabel    string `yaml:"copy_label"`
-	CopiedLabel  string `yaml:"copied_label"`
+	BackLabel         string `yaml:"back_label"`
+	BackHref          string `yaml:"back_href"`
+	UpdatedLabel      string `yaml:"updated_label"`
+	CopyLabel         string `yaml:"copy_label"`
+	CopiedLabel       string `yaml:"copied_label"`
+	ContentsLabel     string `yaml:"contents_label"`
+	ContentsAriaLabel string `yaml:"contents_aria_label"`
+	TOCMinItems       int    `yaml:"toc_min_items"`
+}
+
+// TOCItem represents a heading entry in a post's table of contents.
+type TOCItem struct {
+	ID       string
+	Text     string
+	Level    int
+	Children []TOCItem
 }
 
 // TitleColor represents a coloured substring rule from post front matter.
@@ -241,6 +252,8 @@ type Post struct {
 	Tags             []string
 	RawBody          string
 	Body             template.HTML
+	TOC              []TOCItem
+	ShowTOC          bool
 	URL              string
 }
 

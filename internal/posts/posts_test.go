@@ -95,3 +95,52 @@ func TestSplitFrontMatterRejectsUnknownKey(t *testing.T) {
 		t.Fatal("expected error for unknown front matter key, got nil")
 	}
 }
+
+func TestRenderMarkdownWithTOC(t *testing.T) {
+	md := `### Orphan Subheading
+
+## Section with ` + "`code`" + ` and [link](https://example.com)
+
+### Nested Child
+
+## Duplicate
+
+### Duplicate
+`
+	out, toc, err := posts.RenderMarkdownWithTOC(md, posts.CopyLabels{Copy: "Copy", Copied: "Copied"})
+	if err != nil {
+		t.Fatalf("RenderMarkdownWithTOC failed: %v", err)
+	}
+	html := string(out)
+
+	// Expect 3 top-level items: Orphan Subheading (h3), Section... (h2 with 1 child), Duplicate (h2 with 1 child)
+	if len(toc) != 3 {
+		t.Fatalf("expected 3 top-level TOC items, got %d: %+v", len(toc), toc)
+	}
+	if toc[0].Level != 3 || toc[0].Text != "Orphan Subheading" {
+		t.Errorf("unexpected first TOC item: %+v", toc[0])
+	}
+	if toc[1].Text != "Section with code and link" {
+		t.Errorf("expected plain text stripped of inline markup, got %q", toc[1].Text)
+	}
+	if len(toc[1].Children) != 1 || toc[1].Children[0].Text != "Nested Child" {
+		t.Errorf("expected Nested Child under Section, got %+v", toc[1].Children)
+	}
+	if len(toc[2].Children) != 1 || toc[2].ID == toc[2].Children[0].ID {
+		t.Errorf("expected duplicate headings to have distinct IDs, got parent=%q child=%+v", toc[2].ID, toc[2].Children)
+	}
+
+	// Every TOC ID must exist in rendered HTML
+	var allIDs []string
+	for _, item := range toc {
+		allIDs = append(allIDs, item.ID)
+		for _, ch := range item.Children {
+			allIDs = append(allIDs, ch.ID)
+		}
+	}
+	for _, id := range allIDs {
+		if !strings.Contains(html, `id="`+id+`"`) {
+			t.Errorf("TOC id %q not found in rendered HTML:\n%s", id, html)
+		}
+	}
+}

@@ -259,11 +259,13 @@ func preparePosts(data *model.HomepageData) error {
 			}
 		}
 		if items[i].RawBody != "" && items[i].Body == "" {
-			rendered, err := posts.RenderMarkdown(items[i].RawBody, labels)
+			rendered, rawTOC, err := posts.RenderMarkdownWithTOC(items[i].RawBody, labels)
 			if err != nil {
 				return fmt.Errorf("rendering post %s: %w", items[i].Slug, err)
 			}
 			items[i].Body = rendered
+			items[i].TOC = convertTOC(rawTOC)
+			items[i].ShowTOC = countTOCItems(items[i].TOC) >= data.Posts.PostPage.TOCMinItems
 		}
 		if items[i].URL == "" || items[i].URL == "#" {
 			items[i].URL = "posts/" + items[i].Slug + "/"
@@ -291,6 +293,31 @@ func preparePosts(data *model.HomepageData) error {
 		data.LatestPost = nil
 	}
 	return nil
+}
+
+func convertTOC(in []posts.TOCItem) []model.TOCItem {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make([]model.TOCItem, len(in))
+	for i, item := range in {
+		out[i] = model.TOCItem{
+			ID:       item.ID,
+			Text:     item.Text,
+			Level:    item.Level,
+			Children: convertTOC(item.Children),
+		}
+	}
+	return out
+}
+
+func countTOCItems(items []model.TOCItem) int {
+	total := 0
+	for _, item := range items {
+		total++
+		total += len(item.Children)
+	}
+	return total
 }
 
 func splitTitleSegments(title string, colors []model.TitleColor) []model.TitleSegment {

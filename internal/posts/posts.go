@@ -13,11 +13,21 @@ import (
 	chromahtml "github.com/alecthomas/chroma/v2/formatters/html"
 	"github.com/yuin/goldmark"
 	highlighting "github.com/yuin/goldmark-highlighting/v2"
+	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
+	"github.com/yuin/goldmark/text"
 	"github.com/yuin/goldmark/util"
 	"gopkg.in/yaml.v3"
 )
+
+// TOCItem represents a heading entry extracted from Markdown for the table of contents.
+type TOCItem struct {
+	ID       string
+	Text     string
+	Level    int
+	Children []TOCItem
+}
 
 // CopyLabels configures accessible labels for fenced code-block copy buttons.
 type CopyLabels struct {
@@ -140,12 +150,19 @@ func (preWrapper) End(code bool) string {
 }
 
 // RenderMarkdown renders owner-authored Markdown into sanitized HTML.
+func RenderMarkdown(markdown string, labels CopyLabels) (template.HTML, error) {
+	body, _, err := RenderMarkdownWithTOC(markdown, labels)
+	return body, err
+}
+
+// RenderMarkdownWithTOC renders owner-authored Markdown into sanitized HTML and extracts
+// a nested table of contents (h2 and h3 headings with their goldmark-assigned IDs).
 //
 // Security note: this is the ONLY place in the codebase that constructs template.HTML.
 // It is safe because goldmark runs with its default unsafe=false setting (raw HTML
 // tags and unsafe URLs in Markdown are stripped/neutralised rather than passed through)
 // and all post files are owner-authored local files.
-func RenderMarkdown(markdown string, labels CopyLabels) (template.HTML, error) {
+func RenderMarkdownWithTOC(markdown string, labels CopyLabels) (template.HTML, []TOCItem, error) {
 	copyLabel := labels.Copy
 	if copyLabel == "" {
 		copyLabel = "Copy code"
@@ -199,9 +216,72 @@ func RenderMarkdown(markdown string, labels CopyLabels) (template.HTML, error) {
 		// Leave goldmark's default unsafe=false: raw HTML in Markdown is NOT passed through.
 	)
 
+	source := []byte(markdown)
+	doc := md.Parser().Parse(text.NewReader(source))
+
+	var toc []TOCItem
+	_ = ast.Walk(doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+		if !entering {
+			return ast.WalkContinue, nil
+		}
+		h, ok := n.(*ast.Heading)
+		if !ok || (h.Level != 2 && h.Level != 3) {
+			return ast.WalkContinue, nil
+		}
+		idVal, hasID := h.AttributeString("id")
+		if !hasID {
+			return ast.WalkContinue, nil
+		}
+		var id string
+		switch v := idVal.(type) {
+		case []byte:
+			id = string(v)
+		case string:
+			id = v
+		}
+		if id == "" {
+			return ast.WalkContinue, nil
+		}
+		headingText := strings.TrimSpace(extractPlainText(h, source))
+		if headingText == "" {
+			return ast.WalkContinue, nil
+		}
+		item := TOCItem{
+			ID:    id,
+			Text:  headingText,
+			Level: h.Level,
+		}
+		if h.Level == 3 && len(toc) > 0 && toc[len(toc)-1].Level == 2 {
+			toc[len(toc)-1].Children = append(toc[len(toc)-1].Children, item)
+		} else {
+			toc = append(toc, item)
+		}
+		return ast.WalkSkipChildren, nil
+	})
+
 	var buf bytes.Buffer
-	if err := md.Convert([]byte(markdown), &buf); err != nil {
-		return "", fmt.Errorf("rendering markdown: %w", err)
+	if err := md.Renderer().Render(&buf, source, doc); err != nil {
+		return "", nil, fmt.Errorf("rendering markdown: %w", err)
 	}
-	return template.HTML(buf.String()), nil
+	return template.HTML(buf.String()), toc, nil
+}
+
+func extractPlainText(node ast.Node, source []byte) string {
+	var b strings.Builder
+	_ = ast.Walk(node, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+		if !entering {
+			return ast.WalkContinue, nil
+		}
+		switch v := n.(type) {
+		case *ast.Text:
+			b.Write(v.Segment.Value(source))
+			if v.SoftLineBreak() {
+				b.WriteByte(' ')
+			}
+		case *ast.String:
+			b.Write(v.Value)
+		}
+		return ast.WalkContinue, nil
+	})
+	return b.String()
 }

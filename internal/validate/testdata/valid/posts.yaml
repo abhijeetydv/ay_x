@@ -19,3 +19,6 @@ post_page:
   updated_label: "Updated"
   copy_label: "Copy code"
   copied_label: "Copied"
+  contents_label: "[contents]"
+  contents_aria_label: "Table of contents"
+  toc_min_items: 2
