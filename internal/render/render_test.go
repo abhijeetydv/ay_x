@@ -769,3 +769,160 @@ func TestNavPanelDockAndResumeEndToEnd(t *testing.T) {
 		}
 	}
 }
+
+func TestProjectPagesEndToEnd(t *testing.T) {
+	data, err := loader.LoadAll(filepath.Join("..", "validate", "testdata", "valid"))
+	if err != nil {
+		t.Fatalf("LoadAll fixture failed: %v", err)
+	}
+	// Verify raw <script> in a project body is neutralised.
+	data.AllProjects[0].RawBody += "\n\n<script>alert('xss')</script>\n"
+	if err := validate.Homepage(data); err != nil {
+		t.Fatalf("validate.Homepage failed: %v", err)
+	}
+
+	outDir := t.TempDir()
+	templateDir := filepath.Join("..", "..", "templates")
+	rootDir := filepath.Join("..", "..")
+	if err := render.BuildSite(templateDir, rootDir, outDir, data); err != nil {
+		t.Fatalf("BuildSite failed: %v", err)
+	}
+
+	sitemapRaw, err := os.ReadFile(filepath.Join(outDir, "sitemap.xml"))
+	if err != nil {
+		t.Fatalf("reading sitemap.xml: %v", err)
+	}
+	sitemap := string(sitemapRaw)
+
+	titleTagRe := regexp.MustCompile(`<title>[^<]+</title>`)
+	tocHrefRe := regexp.MustCompile(`class="toc-link" href="#([^"]+)"`)
+	// Actually in article_layout.html: <a href="#{{.ID}}" class="toc-link">
+	tocLinkRe := regexp.MustCompile(`<a href="#([^"]+)" class="toc-link">`)
+	tagChipRe := regexp.MustCompile(`<span class="tag tag-c[0-5]">`)
+
+	for _, proj := range data.AllProjects {
+		pagePath := filepath.Join(outDir, "projects", proj.Slug, "index.html")
+		raw, err := os.ReadFile(pagePath)
+		if err != nil {
+			t.Fatalf("reading %s: %v", pagePath, err)
+		}
+		html := string(raw)
+
+		// Shared-layout guard
+		if !strings.Contains(html, `<article class="post-article">`) || !strings.Contains(html, `class="post-title-display"`) {
+			t.Errorf("%s: missing shared article_layout classes", proj.Slug)
+		}
+
+		if len(titleTagRe.FindAllString(html, -1)) != 1 {
+			t.Errorf("%s: expected exactly 1 <title> tag", proj.Slug)
+		}
+		wantDesc := `<meta name="description" content="` + proj.Summary + `">`
+		if !strings.Contains(html, wantDesc) {
+			t.Errorf("%s: missing description meta %q", proj.Slug, wantDesc)
+		}
+		wantCanonical := `<link rel="canonical" href="` + data.Site.URL + `projects/` + proj.Slug + `/">`
+		if !strings.Contains(html, wantCanonical) {
+			t.Errorf("%s: missing canonical %q", proj.Slug, wantCanonical)
+		}
+		if !strings.Contains(html, `<meta property="og:type" content="website">`) {
+			t.Errorf("%s: missing og:type website", proj.Slug)
+		}
+		if count := strings.Count(html, `class="title-color `); count != len(proj.TitleColors) {
+			t.Errorf("%s: title-color span count = %d, want %d", proj.Slug, count, len(proj.TitleColors))
+		}
+		if len(proj.Tags) > 0 && !tagChipRe.MatchString(html) {
+			t.Errorf("%s: missing tag palette chip", proj.Slug)
+		}
+		if !strings.Contains(html, `<p class="project-summary">`+proj.Summary+`</p>`) {
+			t.Errorf("%s: missing project-summary paragraph", proj.Slug)
+		}
+		if !strings.Contains(html, `class="project-links"`) || !strings.Contains(html, `href="`+proj.GitHubURL+`"`) {
+			t.Errorf("%s: missing GitHub link in project-links", proj.Slug)
+		}
+		if proj.LiveURL != "" {
+			if !strings.Contains(html, `href="`+proj.LiveURL+`"`) {
+				t.Errorf("%s: missing LiveURL %q", proj.Slug, proj.LiveURL)
+			}
+		} else if strings.Contains(html, data.Projects.ProjectPage.LiveLabel) {
+			t.Errorf("%s: unexpected Live button when live_url is empty", proj.Slug)
+		}
+		if !strings.Contains(html, `target="_blank" rel="noopener noreferrer"`) || !strings.Contains(html, data.Site.Nav.NewTabLabel) {
+			t.Errorf("%s: missing target/rel or new_tab_label on project links", proj.Slug)
+		}
+		if proj.Slug == "proj-1" {
+			if !strings.Contains(html, `class="toc"`) {
+				t.Errorf("proj-1: expected TOC sidebar")
+			}
+			for _, m := range tocLinkRe.FindAllStringSubmatch(html, -1) {
+				if !strings.Contains(html, `id="`+m[1]+`"`) {
+					t.Errorf("proj-1: TOC href #%s has no matching id", m[1])
+				}
+			}
+		} else if strings.Contains(html, `class="toc"`) {
+			t.Errorf("%s: unexpected TOC sidebar", proj.Slug)
+		}
+		_ = tocHrefRe
+
+		// Root-prefixed assets, logo, active nav, dock, panel, no XSS
+		for _, want := range []string{
+			`href="../../styles.css"`,
+			`src="../../script.js"`,
+			`class="nav-logo">~/projects/` + proj.Slug + `</a>`,
+			`<a href="../../projects.html" class="nav-link active" aria-current="page">Projects</a>`,
+			`class="footer-socials"`,
+			`id="nav-panel"`,
+		} {
+			if !strings.Contains(html, want) {
+				t.Errorf("%s: missing %q", proj.Slug, want)
+			}
+		}
+		if strings.Count(html, `class="footer-socials"`) != 1 {
+			t.Errorf("%s: expected exactly 1 footer-socials nav", proj.Slug)
+		}
+		if strings.Contains(html, "<script>alert") {
+			t.Errorf("%s: raw <script> leaked into HTML", proj.Slug)
+		}
+		for _, bad := range []string{"<no value>", "{{", "%!"} {
+			if strings.Contains(html, bad) {
+				t.Errorf("%s: unexpected template artifact %q", proj.Slug, bad)
+			}
+		}
+		if !strings.Contains(sitemap, data.Site.URL+"projects/"+proj.Slug+"/") {
+			t.Errorf("sitemap.xml missing project URL for %s", proj.Slug)
+		}
+	}
+
+	// Shared-layout guard on a post page
+	postRaw, err := os.ReadFile(filepath.Join(outDir, "posts", data.SortedPosts[0].Slug, "index.html"))
+	if err != nil {
+		t.Fatalf("reading post page: %v", err)
+	}
+	if !strings.Contains(string(postRaw), `<article class="post-article">`) {
+		t.Errorf("post page missing shared article_layout root")
+	}
+
+	// List page and home featured links + card count
+	projectsListRaw, err := os.ReadFile(filepath.Join(outDir, "projects.html"))
+	if err != nil {
+		t.Fatalf("reading projects.html: %v", err)
+	}
+	projectsListHTML := string(projectsListRaw)
+	if count := strings.Count(projectsListHTML, `class="project-card"`); count != len(data.AllProjects) {
+		t.Errorf("projects.html card count = %d, want %d", count, len(data.AllProjects))
+	}
+	for _, proj := range data.AllProjects {
+		if !strings.Contains(projectsListHTML, `href="projects/`+proj.Slug+`/"`) {
+			t.Errorf("projects.html missing link to projects/%s/", proj.Slug)
+		}
+	}
+
+	homeRaw, err := os.ReadFile(filepath.Join(outDir, "index.html"))
+	if err != nil {
+		t.Fatalf("reading index.html: %v", err)
+	}
+	for _, proj := range data.FeaturedProjects {
+		if !strings.Contains(string(homeRaw), `href="projects/`+proj.Slug+`/"`) {
+			t.Errorf("index.html missing link to featured project projects/%s/", proj.Slug)
+		}
+	}
+}
