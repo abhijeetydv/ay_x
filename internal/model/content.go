@@ -152,18 +152,31 @@ type ExperienceConfig struct {
 	Tabs CareerTabsConfig    `yaml:"tabs"`
 }
 
-// ProjectItem represents a project card.
+// ProjectItem represents a project card and its detail page content.
 type ProjectItem struct {
-	ID           string   `yaml:"id"`
-	Owner        string   `yaml:"owner"`
-	Repo         string   `yaml:"repo"`
-	Stars        int      `yaml:"stars"`
-	TerminalDesc string   `yaml:"terminal_desc"`
-	Title        string   `yaml:"title"`
-	Summary      string   `yaml:"summary"`
-	Tags         []string `yaml:"tags"`
-	Featured     bool     `yaml:"featured"`
-	Order        int      `yaml:"order"`
+	Slug             string
+	SourcePath       string
+	Owner            string
+	Repo             string
+	Stars            int
+	TerminalDesc     string
+	Title            string
+	TitleColors      []TitleColor
+	TitleSegments    []TitleSegment
+	Summary          string
+	Tags             []string
+	Featured         bool
+	Order            int
+	HasOrder         bool
+	GitHubURL        string
+	LiveURL          string
+	Updated          string
+	FormattedUpdated string
+	RawBody          string
+	Body             template.HTML
+	TOC              []TOCItem
+	ShowTOC          bool
+	URL              string
 }
 
 // ProjectsPageConfig holds metadata and copy for projects.html.
@@ -176,13 +189,22 @@ type ProjectsPageConfig struct {
 	BackHref    string `yaml:"back_href"`
 }
 
+// ProjectPageConfig configures individual project detail pages.
+type ProjectPageConfig struct {
+	BackLabel      string `yaml:"back_label"`
+	BackHref       string `yaml:"back_href"`
+	GitHubLabel    string `yaml:"github_label"`
+	LiveLabel      string `yaml:"live_label"`
+	LinksAriaLabel string `yaml:"links_aria_label"`
+}
+
 // ProjectsConfig represents content/projects.yaml.
 type ProjectsConfig struct {
-	Title   string             `yaml:"title"`
-	Icon    string             `yaml:"icon"`
-	ViewAll Link               `yaml:"view_all"`
-	Page    ProjectsPageConfig `yaml:"page"`
-	Items   []ProjectItem      `yaml:"items"`
+	Title       string             `yaml:"title"`
+	Icon        string             `yaml:"icon"`
+	ViewAll     Link               `yaml:"view_all"`
+	Page        ProjectsPageConfig `yaml:"page"`
+	ProjectPage ProjectPageConfig  `yaml:"project_page"`
 }
 
 // SkillsConfig represents content/skills.yaml.

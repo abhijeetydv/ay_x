@@ -27,12 +27,12 @@ func TestValidContentDirectory(t *testing.T) {
 	if len(data.FeaturedProjects) == 0 {
 		t.Fatal("expected at least 1 featured project, got 0")
 	}
-	seenIDs := make(map[string]bool, len(data.Projects.Items))
-	for _, item := range data.Projects.Items {
-		if seenIDs[item.ID] {
-			t.Fatalf("duplicate project ID %q", item.ID)
+	seenIDs := make(map[string]bool, len(data.AllProjects))
+	for _, item := range data.AllProjects {
+		if seenIDs[item.Slug] {
+			t.Fatalf("duplicate project slug %q", item.Slug)
 		}
-		seenIDs[item.ID] = true
+		seenIDs[item.Slug] = true
 	}
 }
 
@@ -47,8 +47,8 @@ func TestFixtureContentCounts(t *testing.T) {
 	if len(data.OrderedSections) != 6 {
 		t.Fatalf("expected 6 ordered sections, got %d", len(data.OrderedSections))
 	}
-	if len(data.FeaturedProjects) != 2 {
-		t.Fatalf("expected 2 featured projects, got %d", len(data.FeaturedProjects))
+	if len(data.FeaturedProjects) != 1 {
+		t.Fatalf("expected 1 featured project, got %d", len(data.FeaturedProjects))
 	}
 }
 
@@ -68,9 +68,9 @@ func TestDuplicateProjectIDRejected(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadAll failed: %v", err)
 	}
-	data.Projects.Items[1].ID = data.Projects.Items[0].ID
+	data.AllProjects[1].Slug = data.AllProjects[0].Slug
 	if err := validate.Homepage(data); err == nil {
-		t.Fatal("expected validation error for duplicate project id, got nil")
+		t.Fatal("expected validation error for duplicate project slug, got nil")
 	}
 }
 
