@@ -842,10 +842,27 @@ a {
     padding: 36px 0 64px;
 }
 
+.post-back {
+    max-width: var(--width-post-body);
+    margin: 0 auto 16px;
+}
+
+.post-back .back-link {
+    margin-bottom: 0;
+}
+
 .post-header {
     max-width: var(--width-post-body);
     margin: 0 auto 40px;
     text-align: left;
+}
+
+.post-title-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-bottom: 18px;
 }
 
 .post-title-display {
@@ -854,7 +871,7 @@ a {
     text-transform: uppercase;
     letter-spacing: -0.02em;
     overflow-wrap: anywhere;
-    margin-bottom: 18px;
+    margin-bottom: 0;
 }
 
 .post-meta {
@@ -890,7 +907,7 @@ a {
 }
 
 .project-links {
-    margin: 0 0 20px;
+    margin: 0;
 }
 
 .project-links-list {
@@ -899,7 +916,7 @@ a {
     justify-content: flex-start;
     align-items: center;
     flex-wrap: wrap;
-    gap: 12px;
+    gap: 8px;
     margin: 0;
     padding: 0;
 }
@@ -908,37 +925,27 @@ a {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    padding: 9px 16px;
+    width: 34px;
+    height: 34px;
+    padding: 0;
     border-radius: var(--radius-sm);
-    border: 1px solid var(--border-light);
+    border: 1px solid var(--border);
     background: var(--bg-card);
-    color: var(--text-primary);
-    font-size: 0.85rem;
-    font-weight: 500;
+    color: var(--text-muted);
     text-decoration: none;
     transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
 .project-link:hover {
-    border-color: var(--accent);
+    color: var(--text-primary);
+    border-color: var(--border-light);
     background: var(--bg-card-hover);
-}
-
-.project-link-primary {
-    border-color: var(--accent);
-    color: var(--accent);
-    background: transparent;
-}
-
-.project-link-primary:hover {
-    background: var(--accent);
-    color: var(--bg-base);
 }
 
 .project-link:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
+    color: var(--text-primary);
 }
 
 /* --- Post Contents Sidebar (No Divider Lines) --- */
@@ -1001,6 +1008,10 @@ a {
 }
 
 @media (min-width: 1000px) {
+    .post-article:has(.post-layout.has-toc) .post-back {
+        max-width: calc(240px + 48px + var(--width-post-body));
+    }
+
     .post-article:has(.post-layout.has-toc) .post-header {
         max-width: calc(240px + 48px + var(--width-post-body));
         padding-left: calc(240px + 48px);
