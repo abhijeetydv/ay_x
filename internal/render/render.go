@@ -29,6 +29,36 @@ type PageSpec struct {
 	Post          *model.Post
 }
 
+// ArticleLink represents an external action button rendered in the shared article header.
+type ArticleLink struct {
+	Label   string
+	Href    string
+	Icon    string
+	Primary bool
+}
+
+// ArticleView provides unified data for templates/partials/article_layout.html.
+type ArticleView struct {
+	BackHref          string
+	BackLabel         string
+	Title             string
+	TitleSegments     []model.TitleSegment
+	Summary           string
+	Date              string
+	FormattedDate     string
+	Updated           string
+	FormattedUpdated  string
+	UpdatedLabel      string
+	LinksAriaLabel    string
+	Links             []ArticleLink
+	Tags              []string
+	ShowTOC           bool
+	ContentsAriaLabel string
+	ContentsLabel     string
+	TOC               []model.TOCItem
+	Body              template.HTML
+}
+
 // PageContext wraps HomepageData with the active page metadata.
 type PageContext struct {
 	*model.HomepageData
@@ -43,6 +73,7 @@ type PageContext struct {
 	PathSegments    []string
 	LogoText        string
 	Post            *model.Post
+	Article         *ArticleView
 }
 
 // DefaultPages returns the configured pages to generate for the site.
@@ -145,12 +176,30 @@ func BuildPages(templateDir, rootDir, outDir string, data *model.HomepageData, p
 		outHTML := filepath.Join(outDir, filepath.FromSlash(p.Output))
 		segments := resolvePathSegments(data, p)
 		postPtr := p.Post
+		var article *ArticleView
 		if postPtr != nil {
 			for idx := range data.SortedPosts {
 				if data.SortedPosts[idx].Slug == postPtr.Slug {
 					postPtr = &data.SortedPosts[idx]
 					break
 				}
+			}
+			article = &ArticleView{
+				BackHref:          data.Posts.PostPage.BackHref,
+				BackLabel:         data.Posts.PostPage.BackLabel,
+				Title:             postPtr.Title,
+				TitleSegments:     postPtr.TitleSegments,
+				Date:              postPtr.Date,
+				FormattedDate:     postPtr.FormattedDate,
+				Updated:           postPtr.Updated,
+				FormattedUpdated:  postPtr.FormattedUpdated,
+				UpdatedLabel:      data.Posts.PostPage.UpdatedLabel,
+				Tags:              postPtr.Tags,
+				ShowTOC:           postPtr.ShowTOC,
+				ContentsAriaLabel: data.Posts.PostPage.ContentsAriaLabel,
+				ContentsLabel:     data.Posts.PostPage.ContentsLabel,
+				TOC:               postPtr.TOC,
+				Body:              postPtr.Body,
 			}
 		}
 		if err := renderPage(tmplPath, outHTML, PageContext{
@@ -166,6 +215,7 @@ func BuildPages(templateDir, rootDir, outDir string, data *model.HomepageData, p
 			PathSegments:    segments,
 			LogoText:        data.Site.Nav.Logo + strings.Join(segments, "/"),
 			Post:            postPtr,
+			Article:         article,
 		}); err != nil {
 			return err
 		}
