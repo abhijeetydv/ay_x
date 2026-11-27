@@ -843,9 +843,9 @@ a {
 }
 
 .post-header {
-    max-width: var(--width-post-title);
+    max-width: var(--width-post-body);
     margin: 0 auto 40px;
-    text-align: center;
+    text-align: left;
 }
 
 .post-title-display {
@@ -859,7 +859,7 @@ a {
 
 .post-meta {
     display: flex;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
     gap: 10px;
     flex-wrap: wrap;
@@ -870,7 +870,7 @@ a {
 
 .post-tags {
     display: flex;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
     gap: 8px;
     flex-wrap: wrap;
@@ -883,20 +883,20 @@ a {
 
 .post-header .project-summary {
     max-width: 60ch;
-    margin: 0 auto 20px;
+    margin: 0 0 20px;
     font-size: 0.95rem;
     line-height: 1.65;
     color: var(--text-secondary);
 }
 
 .project-links {
-    margin: 0 auto 20px;
+    margin: 0 0 20px;
 }
 
 .project-links-list {
     list-style: none;
     display: flex;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
     flex-wrap: wrap;
     gap: 12px;
@@ -1001,6 +1001,11 @@ a {
 }
 
 @media (min-width: 1000px) {
+    .post-article:has(.post-layout.has-toc) .post-header {
+        max-width: calc(240px + 48px + var(--width-post-body));
+        padding-left: calc(240px + 48px);
+    }
+
     .post-layout.has-toc {
         display: grid;
         grid-template-columns: 240px minmax(0, var(--width-post-body));
