@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initSmoothScroll();
     initNavHighlight();
     initCareerTabs();
+    initCodeCopy();
     initGitHubData();
 });
 
@@ -431,4 +432,90 @@ async function fetchLanguageBreakdown() {
     } catch {
         // Keep fallback bars
     }
+}
+
+// --- Code Block Copy Button ---
+async function copyTextToClipboard(text) {
+    if (
+        typeof navigator !== 'undefined' &&
+        navigator.clipboard &&
+        typeof navigator.clipboard.writeText === 'function' &&
+        (typeof window === 'undefined' || window.isSecureContext !== false)
+    ) {
+        await navigator.clipboard.writeText(text);
+        return true;
+    }
+
+    if (typeof document === 'undefined' || typeof document.createElement !== 'function' || !document.body) {
+        return false;
+    }
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    ta.style.pointerEvents = 'none';
+    document.body.appendChild(ta);
+    ta.select();
+    let ok = false;
+    try {
+        ok = typeof document.execCommand === 'function' && document.execCommand('copy');
+    } finally {
+        document.body.removeChild(ta);
+    }
+    return ok;
+}
+
+async function handleCodeCopyClick(btn) {
+    const block = btn && btn.closest ? btn.closest('.code-block') : null;
+    if (!block) return false;
+    const pre = block.querySelector('pre');
+    if (!pre) return false;
+
+    const copyLabel = (btn.dataset && btn.dataset.copyLabel) || '';
+    const copiedLabel = (btn.dataset && btn.dataset.copiedLabel) || '';
+
+    let ok = false;
+    try {
+        ok = await copyTextToClipboard(pre.textContent || '');
+    } catch {
+        return false;
+    }
+    if (!ok) return false;
+
+    if (btn.dataset) {
+        btn.dataset.copied = 'true';
+    }
+    if (copiedLabel) {
+        btn.setAttribute('aria-label', copiedLabel);
+    }
+    const statusEl = document.getElementById('copy-status');
+    if (statusEl && copiedLabel) {
+        statusEl.textContent = copiedLabel;
+    }
+    if (btn._copyTimer) {
+        clearTimeout(btn._copyTimer);
+    }
+    btn._copyTimer = setTimeout(() => {
+        if (btn.dataset) {
+            delete btn.dataset.copied;
+        }
+        if (copyLabel) {
+            btn.setAttribute('aria-label', copyLabel);
+        }
+        if (statusEl) {
+            statusEl.textContent = '';
+        }
+    }, 1500);
+    return true;
+}
+
+function initCodeCopy() {
+    if (!document.querySelector('.code-block')) return;
+
+    document.addEventListener('click', (e) => {
+        const btn = e.target && e.target.closest ? e.target.closest('.code-copy') : null;
+        if (!btn) return;
+        void handleCodeCopyClick(btn);
+    });
 }
