@@ -7,6 +7,8 @@ title_parts:
     style: ["strong", "big"]
   - text: "with"
     style: "serif"
+  # - text: "Building Scalable APIs with"
+  #   style: "plain"
   - text: "Go"
     style: "blue"
 date: "2026-11-20"
