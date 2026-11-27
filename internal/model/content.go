@@ -89,10 +89,33 @@ type SocialLink struct {
 	URL      string `yaml:"url"`
 }
 
+// DockEmailConfig configures the email entry in the social dock.
+type DockEmailConfig struct {
+	Label   string `yaml:"label"`
+	Address string `yaml:"address"`
+}
+
+// DockConfig configures the footer / floating social dock.
+type DockConfig struct {
+	AriaLabel   string          `yaml:"aria_label"`
+	BubbleTitle string          `yaml:"bubble_title"`
+	Email       DockEmailConfig `yaml:"email"`
+	Items       []string        `yaml:"items"`
+}
+
+// DockItem is a resolved entry ready for rendering in the social dock.
+type DockItem struct {
+	Platform   string
+	Label      string
+	Href       string
+	IsExternal bool
+}
+
 // SocialConfig represents content/social.yaml.
 type SocialConfig struct {
 	HeroLinks   []SocialLink `yaml:"hero_links"`
 	FooterLinks []SocialLink `yaml:"footer_links"`
+	Dock        DockConfig   `yaml:"dock"`
 }
 
 // ExperienceBarItem represents an item in the compact experience strip.
@@ -170,7 +193,6 @@ type ConnectCardConfig struct {
 	Title       string `yaml:"title"`
 	Description string `yaml:"description"`
 	CTALabel    string `yaml:"cta_label"`
-	CTAHref     string `yaml:"cta_href"`
 }
 
 // LocationCardConfig configures the Currently Based In tile.
@@ -339,6 +361,7 @@ type HomepageData struct {
 	Site             SiteConfig
 	Hero             HeroConfig
 	Social           SocialConfig
+	DockItems        []DockItem
 	Experience       ExperienceConfig
 	Projects         ProjectsConfig
 	FeaturedProjects []ProjectItem

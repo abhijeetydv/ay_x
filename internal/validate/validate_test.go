@@ -118,6 +118,28 @@ func TestDuplicatePostSlugRejected(t *testing.T) {
 	}
 }
 
+func TestInvalidDockEmailRejected(t *testing.T) {
+	data, err := loader.LoadAll("testdata/valid")
+	if err != nil {
+		t.Fatalf("LoadAll failed: %v", err)
+	}
+	data.Social.Dock.Email.Address = "not-an-email"
+	if err := validate.Homepage(data); err == nil {
+		t.Fatal("expected validation error for invalid dock email, got nil")
+	}
+}
+
+func TestUnknownDockItemRejected(t *testing.T) {
+	data, err := loader.LoadAll("testdata/valid")
+	if err != nil {
+		t.Fatalf("LoadAll failed: %v", err)
+	}
+	data.Social.Dock.Items = append(data.Social.Dock.Items, "mastodon")
+	if err := validate.Homepage(data); err == nil {
+		t.Fatal("expected validation error for unknown dock item, got nil")
+	}
+}
+
 func TestAllowedTitleColorsMatchCSS(t *testing.T) {
 	raw, err := os.ReadFile(filepath.Join("..", "..", "styles.css"))
 	if err != nil {

@@ -55,6 +55,8 @@ func Homepage(data *model.HomepageData) error {
 		return errors.New("content validation failed:\n  - " + strings.Join(errs, "\n  - "))
 	}
 
+	data.DockItems = ResolveDockItems(&data.Social)
+
 	// Build ordered, enabled section keys.
 	if len(data.Site.Sections) == 0 {
 		data.OrderedSections = []string{"hero", "experience_bar", "career", "projects", "info_grid", "bottom_grid"}
@@ -209,6 +211,74 @@ func validateSocial(s *model.SocialConfig, errs *[]string) {
 	}
 	check("hero_links", s.HeroLinks)
 	check("footer_links", s.FooterLinks)
+
+	if strings.TrimSpace(s.Dock.AriaLabel) == "" {
+		*errs = append(*errs, "social.yaml: dock.aria_label is required")
+	}
+	if strings.TrimSpace(s.Dock.BubbleTitle) == "" {
+		*errs = append(*errs, "social.yaml: dock.bubble_title is required")
+	}
+	if strings.TrimSpace(s.Dock.Email.Label) == "" {
+		*errs = append(*errs, "social.yaml: dock.email.label is required")
+	}
+	if !isValidEmail(s.Dock.Email.Address) {
+		*errs = append(*errs, fmt.Sprintf("social.yaml: dock.email.address %q is invalid", s.Dock.Email.Address))
+	}
+	if len(s.Dock.Items) == 0 {
+		*errs = append(*errs, "social.yaml: dock.items must not be empty")
+	}
+	footerByID := make(map[string]model.SocialLink, len(s.FooterLinks))
+	for _, l := range s.FooterLinks {
+		footerByID[strings.ToLower(l.Platform)] = l
+	}
+	seenDock := make(map[string]bool, len(s.Dock.Items))
+	for i, rawID := range s.Dock.Items {
+		id := strings.ToLower(strings.TrimSpace(rawID))
+		if id == "" {
+			*errs = append(*errs, fmt.Sprintf("social.yaml: dock.items[%d] must not be empty", i))
+			continue
+		}
+		if seenDock[id] {
+			*errs = append(*errs, fmt.Sprintf("social.yaml: dock.items[%d] duplicate id %q", i, rawID))
+			continue
+		}
+		seenDock[id] = true
+		if id != "email" {
+			if _, ok := footerByID[id]; !ok {
+				*errs = append(*errs, fmt.Sprintf("social.yaml: dock.items[%d] %q does not match any footer_links platform or \"email\"", i, rawID))
+			}
+		}
+	}
+}
+
+// ResolveDockItems builds the ordered list of dock items from SocialConfig.
+func ResolveDockItems(s *model.SocialConfig) []model.DockItem {
+	footerByID := make(map[string]model.SocialLink, len(s.FooterLinks))
+	for _, l := range s.FooterLinks {
+		footerByID[strings.ToLower(l.Platform)] = l
+	}
+	items := make([]model.DockItem, 0, len(s.Dock.Items))
+	for _, rawID := range s.Dock.Items {
+		id := strings.ToLower(strings.TrimSpace(rawID))
+		if id == "email" {
+			items = append(items, model.DockItem{
+				Platform:   "email",
+				Label:      s.Dock.Email.Label,
+				Href:       "mailto:" + s.Dock.Email.Address,
+				IsExternal: false,
+			})
+			continue
+		}
+		if link, ok := footerByID[id]; ok {
+			items = append(items, model.DockItem{
+				Platform:   id,
+				Label:      link.Label,
+				Href:       link.URL,
+				IsExternal: true,
+			})
+		}
+	}
+	return items
 }
 
 func validateExperience(e *model.ExperienceConfig, errs *[]string) {
@@ -295,9 +365,6 @@ func validateSkills(s *model.SkillsConfig, errs *[]string) {
 func validateAbout(a *model.AboutConfig, errs *[]string) {
 	if strings.TrimSpace(a.Connect.Title) == "" {
 		*errs = append(*errs, "about.yaml: connect.title is required")
-	}
-	if a.Connect.CTAHref != "" && !isSafeHref(a.Connect.CTAHref) {
-		*errs = append(*errs, fmt.Sprintf("about.yaml: connect.cta_href %q is invalid", a.Connect.CTAHref))
 	}
 	if strings.TrimSpace(a.Location.Title) == "" || strings.TrimSpace(a.Location.Name) == "" {
 		*errs = append(*errs, "about.yaml: location.title and location.name are required")

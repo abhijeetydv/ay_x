@@ -7,3 +7,13 @@ footer_links:
   - platform: "github"
     label: "GitHub"
     url: "https://github.com/testuser"
+
+dock:
+  aria_label: "Social links"
+  bubble_title: "Let's connect"
+  email:
+    label: "Email"
+    address: "test@example.com"
+  items:
+    - "github"
+    - "email"

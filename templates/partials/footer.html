@@ -25,15 +25,19 @@
                             <span id="footer-commit-sha">{{.Footer.Commit.SHA}}</span>
                         </a>
                         {{end}}
-                        {{if .Social.FooterLinks}}
+                        {{if .DockItems}}
                         <span class="footer-sep">·</span>
-                        <div class="footer-socials">
-                            {{range .Social.FooterLinks}}
-                            <a href="{{.URL}}" target="_blank" rel="noopener" aria-label="{{.Label}}">
-                                {{template "social_icon_18" (lower .Platform)}}
-                            </a>
-                            {{end}}
-                        </div>
+                        <nav class="footer-socials" aria-label="{{.Social.Dock.AriaLabel}}" data-dock-state="docked">
+                            <ul class="dock-sockets">
+                                {{range $i, $item := .DockItems}}
+                                <li class="dock-socket" style="--i: {{$i}}">
+                                    <a href="{{$item.Href}}"{{if $item.IsExternal}} target="_blank" rel="noopener noreferrer"{{end}} class="dock-link" aria-label="{{$item.Label}}">
+                                        {{template "social_icon_18" $item.Platform}}
+                                    </a>
+                                </li>
+                                {{end}}
+                            </ul>
+                        </nav>
                         {{end}}
                     </div>
                 </div>

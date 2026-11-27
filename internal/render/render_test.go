@@ -440,9 +440,10 @@ func TestHomeConnectAndPostsLinks(t *testing.T) {
 		t.Fatalf("reading index.html: %v", err)
 	}
 
-	connectRe := regexp.MustCompile(`<a href="` + regexp.QuoteMeta(data.About.Connect.CTAHref) + `" class="connect-btn">\s*` + regexp.QuoteMeta(data.About.Connect.CTALabel) + `\s*</a>`)
+	wantConnectHref := "mailto:" + data.Social.Dock.Email.Address
+	connectRe := regexp.MustCompile(`<a href="` + regexp.QuoteMeta(wantConnectHref) + `" class="connect-btn">\s*` + regexp.QuoteMeta(data.About.Connect.CTALabel) + `\s*</a>`)
 	if !connectRe.Match(raw) {
-		t.Errorf("index.html missing connect-btn link to %s with label %q", data.About.Connect.CTAHref, data.About.Connect.CTALabel)
+		t.Errorf("index.html missing connect-btn link to %s with label %q", wantConnectHref, data.About.Connect.CTALabel)
 	}
 	postsRe := regexp.MustCompile(`<a href="posts\.html" class="posts-external">\s*` + regexp.QuoteMeta(data.Posts.HomeTile.AllPostsLabel) + `\s*</a>`)
 	if !postsRe.Match(raw) {
