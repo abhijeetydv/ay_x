@@ -2,6 +2,7 @@ package render_test
 
 import (
 	"encoding/xml"
+	"flag"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -13,6 +14,9 @@ import (
 	"portfolio/internal/render"
 	"portfolio/internal/validate"
 )
+
+//go:generate go test . -run TestHeaderSkeletonGoldens -update
+var updateGoldens = flag.Bool("update", false, "regenerate golden header skeleton files in testdata/")
 
 func TestBuildSite(t *testing.T) {
 	data, err := loader.LoadAll(filepath.Join("..", "validate", "testdata", "valid"))
@@ -923,6 +927,172 @@ func TestProjectPagesEndToEnd(t *testing.T) {
 	for _, proj := range data.FeaturedProjects {
 		if !strings.Contains(string(homeRaw), `href="projects/`+proj.Slug+`/"`) {
 			t.Errorf("index.html missing link to featured project projects/%s/", proj.Slug)
+		}
+	}
+}
+
+func TestArticleLayoutVariantsAndCSSGuard(t *testing.T) {
+	data, err := loader.LoadAll(filepath.Join("..", "validate", "testdata", "valid"))
+	if err != nil {
+		t.Fatalf("LoadAll fixture failed: %v", err)
+	}
+	if err := validate.Homepage(data); err != nil {
+		t.Fatalf("validate.Homepage failed: %v", err)
+	}
+
+	outDir := t.TempDir()
+	templateDir := filepath.Join("..", "..", "templates")
+	rootDir := filepath.Join("..", "..")
+	if err := render.BuildSite(templateDir, rootDir, outDir, data); err != nil {
+		t.Fatalf("BuildSite failed: %v", err)
+	}
+
+	// 1. Post page checks
+	postRaw, err := os.ReadFile(filepath.Join(outDir, "posts", data.SortedPosts[0].Slug, "index.html"))
+	if err != nil {
+		t.Fatalf("reading post page: %v", err)
+	}
+	postHTML := string(postRaw)
+	if !strings.Contains(postHTML, `<article class="post-article article-layout--centered">`) {
+		t.Errorf("post page missing article-layout--centered")
+	}
+	headerEnd := strings.Index(postHTML, "</header>")
+	gridStart := strings.Index(postHTML, `<div class="post-layout has-toc">`)
+	backIdx := strings.Index(postHTML, `class="back-link"`)
+	if headerEnd == -1 || gridStart == -1 || headerEnd > gridStart {
+		t.Errorf("post header must precede two-column .post-layout.has-toc (headerEnd=%d, gridStart=%d)", headerEnd, gridStart)
+	}
+	if backIdx == -1 || backIdx > headerEnd {
+		t.Errorf("post back-link must be inside <header class=\"post-header\"> before </header>")
+	}
+	for _, splitOnly := range []string{`class="post-back"`, `class="post-title-row"`, `class="project-links"`, `class="project-summary"`} {
+		if strings.Contains(postHTML, splitOnly) {
+			t.Errorf("post page must not contain split-only element %s", splitOnly)
+		}
+	}
+
+	// 2. Project page checks
+	projRaw, err := os.ReadFile(filepath.Join(outDir, "projects", "proj-1", "index.html"))
+	if err != nil {
+		t.Fatalf("reading project page: %v", err)
+	}
+	projHTML := string(projRaw)
+	for _, want := range []string{
+		`<article class="post-article article-layout--split">`,
+		`class="post-back"`,
+		`class="post-title-row"`,
+		`class="project-links"`,
+		`class="project-summary"`,
+	} {
+		if !strings.Contains(projHTML, want) {
+			t.Errorf("project page missing %s", want)
+		}
+	}
+
+	// 3. CSS guard
+	cssRaw, err := os.ReadFile(filepath.Join("..", "..", "styles.css"))
+	if err != nil {
+		t.Fatalf("reading styles.css: %v", err)
+	}
+	css := string(cssRaw)
+	if !strings.Contains(css, ".article-layout--centered .post-header") || !strings.Contains(css, ".article-layout--split .post-header") {
+		t.Errorf("styles.css must scope .post-header under both .article-layout--centered and .article-layout--split")
+	}
+	centeredHeaderRe := regexp.MustCompile(`(?s)\.article-layout--centered\s+\.post-header\s*\{([^}]*)\}`)
+	m := centeredHeaderRe.FindStringSubmatch(css)
+	if m == nil || !strings.Contains(m[1], "text-align: center") {
+		t.Errorf(".article-layout--centered .post-header must set text-align: center")
+	}
+	for _, sel := range []string{".post-header", ".post-meta", ".post-tags"} {
+		unscopedRe := regexp.MustCompile(`(?m)^` + regexp.QuoteMeta(sel) + `\s*\{([^}]*)\}`)
+		for _, um := range unscopedRe.FindAllStringSubmatch(css, -1) {
+			if strings.Contains(um[1], "text-align") || strings.Contains(um[1], "justify-content") {
+				t.Errorf("unscoped CSS rule %s must not set text-align or justify-content", sel)
+			}
+		}
+	}
+}
+
+func extractHeaderSkeleton(htmlStr string) string {
+	start := strings.Index(htmlStr, `<article class="post-article`)
+	if start == -1 {
+		return ""
+	}
+	end := strings.Index(htmlStr[start:], `<div class="post-layout`)
+	if end == -1 {
+		end = strings.Index(htmlStr[start:], `<div class="post-body"`)
+	}
+	if end == -1 {
+		return ""
+	}
+	region := htmlStr[start : start+end]
+	tagRe := regexp.MustCompile(`<([a-zA-Z0-9]+)([^>]*)>`)
+	classRe := regexp.MustCompile(`class="([^"]+)"`)
+	var lines []string
+	for _, m := range tagRe.FindAllStringSubmatch(region, -1) {
+		tag := m[1]
+		if tag == "path" || tag == "line" || tag == "polyline" || tag == "circle" {
+			continue
+		}
+		if cm := classRe.FindStringSubmatch(m[2]); cm != nil {
+			lines = append(lines, tag+"."+strings.Join(strings.Fields(cm[1]), "."))
+		} else {
+			lines = append(lines, tag)
+		}
+	}
+	return strings.Join(lines, "\n") + "\n"
+}
+
+func TestHeaderSkeletonGoldens(t *testing.T) {
+	data, err := loader.LoadAll(filepath.Join("..", "validate", "testdata", "valid"))
+	if err != nil {
+		t.Fatalf("LoadAll fixture failed: %v", err)
+	}
+	if err := validate.Homepage(data); err != nil {
+		t.Fatalf("validate.Homepage failed: %v", err)
+	}
+
+	outDir := t.TempDir()
+	templateDir := filepath.Join("..", "..", "templates")
+	rootDir := filepath.Join("..", "..")
+	if err := render.BuildSite(templateDir, rootDir, outDir, data); err != nil {
+		t.Fatalf("BuildSite failed: %v", err)
+	}
+
+	checks := []struct {
+		htmlFile   string
+		goldenFile string
+	}{
+		{
+			htmlFile:   filepath.Join(outDir, "posts", data.SortedPosts[0].Slug, "index.html"),
+			goldenFile: filepath.Join("testdata", "post_header.skeleton"),
+		},
+		{
+			htmlFile:   filepath.Join(outDir, "projects", "proj-1", "index.html"),
+			goldenFile: filepath.Join("testdata", "project_header.skeleton"),
+		},
+	}
+
+	for _, c := range checks {
+		raw, err := os.ReadFile(c.htmlFile)
+		if err != nil {
+			t.Fatalf("reading %s: %v", c.htmlFile, err)
+		}
+		got := extractHeaderSkeleton(string(raw))
+		if *updateGoldens {
+			if err := os.MkdirAll(filepath.Dir(c.goldenFile), 0o755); err != nil {
+				t.Fatalf("mkdir testdata: %v", err)
+			}
+			if err := os.WriteFile(c.goldenFile, []byte(got), 0o644); err != nil {
+				t.Fatalf("writing golden %s: %v", c.goldenFile, err)
+			}
+		}
+		wantBytes, err := os.ReadFile(c.goldenFile)
+		if err != nil {
+			t.Fatalf("reading golden %s (run with -update to create): %v", c.goldenFile, err)
+		}
+		if got != string(wantBytes) {
+			t.Errorf("%s header skeleton mismatch:\ngot:\n%s\nwant:\n%s", c.goldenFile, got, string(wantBytes))
 		}
 	}
 }

@@ -1,0 +1,15 @@
+article.post-article.article-layout--centered
+header.post-header
+a.back-link
+h1.post-title-display
+span.title-color.title-cyan
+span.title-color.title-blue
+div.post-meta
+time
+span.post-meta-sep
+span
+time
+div.post-tags
+svg.post-tags-icon
+span.tag.tag-c0
+span.tag.tag-c2
