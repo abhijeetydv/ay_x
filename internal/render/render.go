@@ -265,8 +265,8 @@ func preparePosts(data *model.HomepageData) error {
 			}
 			items[i].Body = rendered
 		}
-		if items[i].URL == "" {
-			items[i].URL = "#"
+		if items[i].URL == "" || items[i].URL == "#" {
+			items[i].URL = "posts/" + items[i].Slug + "/"
 		}
 	}
 

@@ -223,7 +223,7 @@
                 </div>
                 {{if .LatestPost}}
                 <div class="posts-list">
-                    <a href="{{.LatestPost.URL}}" class="post-item">
+                    <a href="{{rel .Root .LatestPost.URL}}" class="post-item">
                         <span class="post-title">{{.LatestPost.Title}}</span>
                         <span class="post-dots"></span>
                         <span class="post-date">{{.LatestPost.FormattedDate}}</span>

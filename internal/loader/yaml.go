@@ -62,7 +62,7 @@ func LoadAll(contentDir string) (*model.HomepageData, error) {
 			Summary:    pf.FrontMatter.Summary,
 			Tags:       pf.FrontMatter.Tags,
 			RawBody:    pf.Body,
-			URL:        "#",
+			URL:        "posts/" + pf.Slug + "/",
 		})
 	}
 
