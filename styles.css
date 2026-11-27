@@ -598,6 +598,46 @@ a {
     color: var(--text-muted);
 }
 
+/* --- Post Title Styles (Allowlist) --- */
+.title-plain {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.title-dim {
+    font-weight: 400;
+    color: var(--text-muted);
+}
+
+.title-strong {
+    font-weight: 800;
+    color: var(--accent);
+}
+
+.title-warm {
+    color: var(--peach);
+}
+
+.title-violet {
+    color: var(--mauve);
+}
+
+.title-blue {
+    color: var(--blue);
+}
+
+.title-serif {
+    font-family: 'Cormorant', Georgia, serif;
+    font-style: italic;
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.title-big {
+    font-size: 1.15em;
+}
+
 /* --- Contact Page --- */
 .contact-page-section {
     padding: 12px 0 48px;

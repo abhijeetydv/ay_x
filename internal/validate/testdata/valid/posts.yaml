@@ -13,21 +13,9 @@ home_tile:
   all_posts_label: "All posts →"
   all_posts_href: "posts.html"
 
-# placeholder - edit me
-items:
-  - id: "second-post"
-    title: "Older Fixture Post"
-    date: "2026-01-10"
-    summary: "Older summary."
-    url: "#"
-    tags:
-      - "go"
-    external: false
-  - id: "first-post"
-    title: "Newest Fixture Post"
-    date: "2026-02-15"
-    summary: "Newer summary."
-    url: "#"
-    tags:
-      - "redis"
-    external: false
+post_page:
+  back_label: "← Back to posts"
+  back_href: "posts.html"
+  updated_label: "Updated"
+  copy_label: "Copy code"
+  copied_label: "Copied"

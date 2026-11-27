@@ -32,6 +32,7 @@ var (
 	}
 	hexColorRe = regexp.MustCompile(`^#[0-9a-fA-F]{3,8}$`)
 	percentRe  = regexp.MustCompile(`^[0-9]+(\.[0-9]+)?%$`)
+	slugRe     = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
 )
 
 // Homepage validates all loaded YAML content and prepares derived slices
@@ -47,7 +48,7 @@ func Homepage(data *model.HomepageData) error {
 	validateSkills(&data.Skills, &errs)
 	validateAbout(&data.About, &errs)
 	validateAboutPage(&data.AboutPage, &errs)
-	validatePosts(&data.Posts, &errs)
+	validatePosts(&data.Posts, data.SortedPosts, &errs)
 	validateContact(&data.Contact, &errs)
 	validateFooter(&data.Footer, &errs)
 
@@ -350,7 +351,7 @@ func validateAboutPage(a *model.AboutPageConfig, errs *[]string) {
 	}
 }
 
-func validatePosts(p *model.PostsConfig, errs *[]string) {
+func validatePosts(p *model.PostsConfig, postItems []model.Post, errs *[]string) {
 	if strings.TrimSpace(p.Page.Title) == "" {
 		*errs = append(*errs, "posts.yaml: page.title is required")
 	}
@@ -382,24 +383,86 @@ func validatePosts(p *model.PostsConfig, errs *[]string) {
 	if !isSafeHref(p.HomeTile.AllPostsHref) {
 		*errs = append(*errs, fmt.Sprintf("posts.yaml: home_tile.all_posts_href %q is invalid", p.HomeTile.AllPostsHref))
 	}
-	seenIDs := map[string]bool{}
-	for i, item := range p.Items {
-		if strings.TrimSpace(item.ID) == "" {
-			*errs = append(*errs, fmt.Sprintf("posts.yaml: items[%d].id is required", i))
-		} else if seenIDs[item.ID] {
-			*errs = append(*errs, fmt.Sprintf("posts.yaml: duplicate post id %q", item.ID))
+	if strings.TrimSpace(p.PostPage.BackLabel) == "" {
+		*errs = append(*errs, "posts.yaml: post_page.back_label is required")
+	}
+	if !isSafeHref(p.PostPage.BackHref) {
+		*errs = append(*errs, fmt.Sprintf("posts.yaml: post_page.back_href %q is invalid", p.PostPage.BackHref))
+	}
+	if strings.TrimSpace(p.PostPage.UpdatedLabel) == "" {
+		*errs = append(*errs, "posts.yaml: post_page.updated_label is required")
+	}
+	if strings.TrimSpace(p.PostPage.CopyLabel) == "" {
+		*errs = append(*errs, "posts.yaml: post_page.copy_label is required")
+	}
+	if strings.TrimSpace(p.PostPage.CopiedLabel) == "" {
+		*errs = append(*errs, "posts.yaml: post_page.copied_label is required")
+	}
+
+	allowedStyles := make(map[string]bool, len(model.AllowedTitleStyles))
+	for _, st := range model.AllowedTitleStyles {
+		allowedStyles[st] = true
+	}
+
+	seenSlugs := map[string]bool{}
+	for _, item := range postItems {
+		loc := item.SourcePath
+		if loc == "" {
+			loc = item.Slug
 		}
-		seenIDs[item.ID] = true
+		if !slugRe.MatchString(item.Slug) {
+			*errs = append(*errs, fmt.Sprintf("%s: slug %q must match ^[a-z0-9]+(-[a-z0-9]+)*$", loc, item.Slug))
+		} else if seenSlugs[item.Slug] {
+			*errs = append(*errs, fmt.Sprintf("%s: duplicate post slug %q", loc, item.Slug))
+		}
+		seenSlugs[item.Slug] = true
+
 		if strings.TrimSpace(item.Title) == "" {
-			*errs = append(*errs, fmt.Sprintf("posts.yaml: items[%d].title is required", i))
+			*errs = append(*errs, fmt.Sprintf("%s: title is required", loc))
 		}
 		if _, err := time.Parse("2006-01-02", item.Date); err != nil {
-			*errs = append(*errs, fmt.Sprintf("posts.yaml: items[%d].date %q must be YYYY-MM-DD", i, item.Date))
+			*errs = append(*errs, fmt.Sprintf("%s: date %q must be YYYY-MM-DD", loc, item.Date))
 		}
-		if !isSafeHref(item.URL) {
-			*errs = append(*errs, fmt.Sprintf("posts.yaml: items[%d].url %q is invalid", i, item.URL))
+		if item.Updated != "" {
+			if _, err := time.Parse("2006-01-02", item.Updated); err != nil {
+				*errs = append(*errs, fmt.Sprintf("%s: updated %q must be YYYY-MM-DD", loc, item.Updated))
+			}
+		}
+		validateDescription(fmt.Sprintf("%s: summary", loc), item.Summary, errs)
+
+		for j, tag := range item.Tags {
+			if strings.TrimSpace(tag) == "" || strings.ContainsAny(tag, " \t\r\n") || tag != strings.ToLower(tag) {
+				*errs = append(*errs, fmt.Sprintf("%s: tags[%d] %q must be a non-empty lowercase string without whitespace", loc, j, tag))
+			}
+		}
+
+		if len(item.TitleParts) > 0 {
+			joinedParts := make([]string, 0, len(item.TitleParts))
+			for j, part := range item.TitleParts {
+				if strings.TrimSpace(part.Text) == "" {
+					*errs = append(*errs, fmt.Sprintf("%s: title_parts[%d].text is required", loc, j))
+				}
+				joinedParts = append(joinedParts, normalizeWhitespace(part.Text))
+				if len(part.Styles) == 0 {
+					*errs = append(*errs, fmt.Sprintf("%s: title_parts[%d].style is required", loc, j))
+				}
+				for _, st := range part.Styles {
+					if !allowedStyles[st] {
+						*errs = append(*errs, fmt.Sprintf("%s: title_parts[%d].style %q is not in allowlist", loc, j, st))
+					}
+				}
+			}
+			normTitle := normalizeWhitespace(item.Title)
+			normJoined := normalizeWhitespace(strings.Join(joinedParts, " "))
+			if normJoined != normTitle {
+				*errs = append(*errs, fmt.Sprintf("%s: title_parts joined (%q) does not match title (%q)", loc, normJoined, normTitle))
+			}
 		}
 	}
+}
+
+func normalizeWhitespace(s string) string {
+	return strings.Join(strings.Fields(s), " ")
 }
 
 func validateContact(c *model.ContactConfig, errs *[]string) {

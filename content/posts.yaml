@@ -13,39 +13,9 @@ home_tile:
   all_posts_label: "All posts →"
   all_posts_href: "posts.html"
 
-# placeholder - edit me
-items:
-  - id: "building-scalable-apis-with-go"
-    title: "Building Scalable APIs with Go"
-    date: "2026-11-20"
-    summary: "Structuring HTTP services, graceful shutdown, and middleware in Go."
-    url: "#"
-    tags:
-      - "go"
-      - "apis"
-    external: false
-  - id: "redis-caching-patterns-that-scale"
-    title: "Redis Caching Patterns That Scale"
-    date: "2026-10-15"
-    summary: "Cache-aside, stampede prevention, and key expiration strategies."
-    url: "#"
-    tags:
-      - "redis"
-      - "caching"
-    external: false
-  - id: "docker-multi-stage-builds"
-    title: "Docker Multi-Stage Builds"
-    date: "2026-09-08"
-    summary: "Keeping container images small, reproducible, and fast to deploy."
-    url: "#"
-    tags:
-      - "docker"
-    external: false
-  - id: "hello-world"
-    title: "Hello World"
-    date: "2026-08-01"
-    summary: "First note on starting this engineering log."
-    url: "#"
-    tags:
-      - "meta"
-    external: false
+post_page:
+  back_label: "← Back to posts"
+  back_href: "posts.html"
+  updated_label: "Updated"
+  copy_label: "Copy code"
+  copied_label: "Copied"

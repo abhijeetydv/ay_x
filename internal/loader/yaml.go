@@ -8,6 +8,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"portfolio/internal/model"
+	"portfolio/internal/posts"
 )
 
 // LoadAll reads all YAML content files from contentDir into a HomepageData struct.
@@ -36,6 +37,33 @@ func LoadAll(contentDir string) (*model.HomepageData, error) {
 		if err := decodeYAMLFile(path, f.dest); err != nil {
 			return nil, fmt.Errorf("loading %s: %w", f.name, err)
 		}
+	}
+
+	postFiles, err := posts.LoadDir(filepath.Join(contentDir, "posts"))
+	if err != nil {
+		return nil, err
+	}
+	data.SortedPosts = make([]model.Post, 0, len(postFiles))
+	for _, pf := range postFiles {
+		parts := make([]model.TitlePart, 0, len(pf.FrontMatter.TitleParts))
+		for _, tp := range pf.FrontMatter.TitleParts {
+			parts = append(parts, model.TitlePart{
+				Text:   tp.Text,
+				Styles: []string(tp.Style),
+			})
+		}
+		data.SortedPosts = append(data.SortedPosts, model.Post{
+			Slug:       pf.Slug,
+			SourcePath: pf.SourcePath,
+			Title:      pf.FrontMatter.Title,
+			TitleParts: parts,
+			Date:       pf.FrontMatter.Date,
+			Updated:    pf.FrontMatter.Updated,
+			Summary:    pf.FrontMatter.Summary,
+			Tags:       pf.FrontMatter.Tags,
+			RawBody:    pf.Body,
+			URL:        "#",
+		})
 	}
 
 	return data, nil

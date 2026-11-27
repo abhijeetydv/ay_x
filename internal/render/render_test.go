@@ -449,7 +449,7 @@ func TestPostsSortingAndEmptyState(t *testing.T) {
 	}
 
 	// Empty items list must render empty_message on posts.html and index.html.
-	data.Posts.Items = nil
+	data.SortedPosts = nil
 	emptyOutDir := t.TempDir()
 	if err := render.BuildSite(templateDir, rootDir, emptyOutDir, data); err != nil {
 		t.Fatalf("BuildSite empty posts failed: %v", err)

@@ -180,8 +180,8 @@ func writeRobots(outPath, baseURL string) error {
 }
 
 func preparePosts(data *model.HomepageData) {
-	items := make([]model.PostEntry, len(data.Posts.Items))
-	copy(items, data.Posts.Items)
+	items := make([]model.Post, len(data.SortedPosts))
+	copy(items, data.SortedPosts)
 
 	dateFormat := data.Posts.Page.DateFormat
 	if dateFormat == "" {
@@ -197,6 +197,16 @@ func preparePosts(data *model.HomepageData) {
 		} else {
 			items[i].FormattedDate = items[i].Date
 		}
+		if items[i].Updated != "" {
+			if ut, uerr := time.Parse("2006-01-02", items[i].Updated); uerr == nil {
+				items[i].FormattedUpdated = ut.Format(dateFormat)
+			} else {
+				items[i].FormattedUpdated = items[i].Updated
+			}
+		}
+		if items[i].URL == "" {
+			items[i].URL = "#"
+		}
 	}
 
 	sort.SliceStable(items, func(i, j int) bool {
@@ -208,7 +218,7 @@ func preparePosts(data *model.HomepageData) {
 		if items[i].Date != items[j].Date {
 			return items[i].Date > items[j].Date
 		}
-		return items[i].ID < items[j].ID
+		return items[i].Slug < items[j].Slug
 	})
 
 	data.SortedPosts = items

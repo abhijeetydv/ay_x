@@ -1,9 +1,13 @@
 package validate_test
 
 import (
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"portfolio/internal/loader"
+	"portfolio/internal/model"
 	"portfolio/internal/validate"
 )
 
@@ -95,20 +99,20 @@ func TestBadPostDateRejected(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadAll failed: %v", err)
 	}
-	data.Posts.Items[0].Date = "2026/01/10"
+	data.SortedPosts[0].Date = "2026/01/10"
 	if err := validate.Homepage(data); err == nil {
 		t.Fatal("expected validation error for bad post date, got nil")
 	}
 }
 
-func TestDuplicatePostIDRejected(t *testing.T) {
+func TestDuplicatePostSlugRejected(t *testing.T) {
 	data, err := loader.LoadAll("testdata/valid")
 	if err != nil {
 		t.Fatalf("LoadAll failed: %v", err)
 	}
-	data.Posts.Items[1].ID = data.Posts.Items[0].ID
+	data.SortedPosts[1].Slug = data.SortedPosts[0].Slug
 	if err := validate.Homepage(data); err == nil {
-		t.Fatal("expected validation error for duplicate post id, got nil")
+		t.Fatal("expected validation error for duplicate post slug, got nil")
 	}
 }
 
@@ -123,13 +127,16 @@ func TestInvalidContactEmailRejected(t *testing.T) {
 	}
 }
 
-func TestUnsafePostURLRejected(t *testing.T) {
-	data, err := loader.LoadAll("testdata/valid")
+func TestAllowedTitleStylesExistInCSS(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "..", "styles.css"))
 	if err != nil {
-		t.Fatalf("LoadAll failed: %v", err)
+		t.Fatalf("reading styles.css: %v", err)
 	}
-	data.Posts.Items[0].URL = "javascript:alert(1)"
-	if err := validate.Homepage(data); err == nil {
-		t.Fatal("expected validation error for unsafe post URL, got nil")
+	css := string(raw)
+	for _, st := range model.AllowedTitleStyles {
+		cls := ".title-" + st
+		if !strings.Contains(css, cls) {
+			t.Errorf("styles.css missing CSS class %s for allowlisted title style %q", cls, st)
+		}
 	}
 }

@@ -1,5 +1,19 @@
 package model
 
+import "html/template"
+
+// AllowedTitleStyles defines the single source of truth for post title_parts styles.
+var AllowedTitleStyles = []string{
+	"plain",
+	"dim",
+	"strong",
+	"warm",
+	"violet",
+	"blue",
+	"serif",
+	"big",
+}
+
 // Link represents a labeled hyperlink.
 type Link struct {
 	Label string `yaml:"label"`
@@ -184,23 +198,43 @@ type PostsHomeTileConfig struct {
 	AllPostsHref  string `yaml:"all_posts_href"`
 }
 
-// PostEntry represents a blog post in content/posts.yaml.
-type PostEntry struct {
-	ID            string   `yaml:"id"`
-	Title         string   `yaml:"title"`
-	Date          string   `yaml:"date"`
-	FormattedDate string   `yaml:"-"`
-	Summary       string   `yaml:"summary,omitempty"`
-	URL           string   `yaml:"url"`
-	Tags          []string `yaml:"tags,omitempty"`
-	External      bool     `yaml:"external,omitempty"`
+// PostPageConfig configures individual post pages (posts/<slug>/index.html).
+type PostPageConfig struct {
+	BackLabel    string `yaml:"back_label"`
+	BackHref     string `yaml:"back_href"`
+	UpdatedLabel string `yaml:"updated_label"`
+	CopyLabel    string `yaml:"copy_label"`
+	CopiedLabel  string `yaml:"copied_label"`
+}
+
+// TitlePart represents a styled segment of a post title.
+type TitlePart struct {
+	Text   string
+	Styles []string
+}
+
+// Post represents a single Markdown blog post loaded from content/posts/*.md.
+type Post struct {
+	Slug             string
+	SourcePath       string
+	Title            string
+	TitleParts       []TitlePart
+	Date             string
+	FormattedDate    string
+	Updated          string
+	FormattedUpdated string
+	Summary          string
+	Tags             []string
+	RawBody          string
+	Body             template.HTML
+	URL              string
 }
 
 // PostsConfig represents content/posts.yaml.
 type PostsConfig struct {
 	Page     PostsPageConfig     `yaml:"page"`
 	HomeTile PostsHomeTileConfig `yaml:"home_tile"`
-	Items    []PostEntry         `yaml:"items"`
+	PostPage PostPageConfig      `yaml:"post_page"`
 }
 
 // FallbackCommit represents a fallback commit row in the GitHub Activity card.
@@ -316,8 +350,8 @@ type HomepageData struct {
 	About            AboutConfig
 	AboutPage        AboutPageConfig
 	Posts            PostsConfig
-	SortedPosts      []PostEntry
-	LatestPost       *PostEntry
+	SortedPosts      []Post
+	LatestPost       *Post
 	Contact          ContactConfig
 	Footer           FooterConfig
 	OrderedSections  []string
