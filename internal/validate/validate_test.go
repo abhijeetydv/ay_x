@@ -251,3 +251,40 @@ func TestLongPostSummaryRejected(t *testing.T) {
 		t.Fatal("expected validation error for summary > 200 chars, got nil")
 	}
 }
+
+func TestNewTabWithoutLabelRejected(t *testing.T) {
+	data, err := loader.LoadAll("testdata/valid")
+	if err != nil {
+		t.Fatalf("LoadAll failed: %v", err)
+	}
+	data.Site.Nav.NewTabLabel = ""
+	if err := validate.Homepage(data); err == nil {
+		t.Fatal("expected validation error when new_tab_label is empty for new_tab link, got nil")
+	}
+}
+
+func TestMissingNavAssetRejected(t *testing.T) {
+	data, err := loader.LoadAll("testdata/valid")
+	if err != nil {
+		t.Fatalf("LoadAll failed: %v", err)
+	}
+	for i := range data.Site.Nav.Links {
+		if data.Site.Nav.Links[i].NewTab {
+			data.Site.Nav.Links[i].Href = "assets/does-not-exist.pdf"
+		}
+	}
+	if err := validate.Homepage(data); err == nil {
+		t.Fatal("expected validation error for missing nav asset file, got nil")
+	}
+}
+
+func TestDuplicateDockItemRejected(t *testing.T) {
+	data, err := loader.LoadAll("testdata/valid")
+	if err != nil {
+		t.Fatalf("LoadAll failed: %v", err)
+	}
+	data.Social.Dock.Items = append(data.Social.Dock.Items, data.Social.Dock.Items[0])
+	if err := validate.Homepage(data); err == nil {
+		t.Fatal("expected validation error for duplicate dock item, got nil")
+	}
+}

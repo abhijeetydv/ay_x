@@ -672,3 +672,97 @@ func TestPostTOCAndDividerFreeLayout(t *testing.T) {
 		}
 	}
 }
+
+func TestNavPanelDockAndResumeEndToEnd(t *testing.T) {
+	data, err := loader.LoadAll(filepath.Join("..", "validate", "testdata", "valid"))
+	if err != nil {
+		t.Fatalf("LoadAll fixture failed: %v", err)
+	}
+	if err := validate.Homepage(data); err != nil {
+		t.Fatalf("validate.Homepage failed: %v", err)
+	}
+
+	outDir := t.TempDir()
+	templateDir := filepath.Join("..", "..", "templates")
+	rootDir := filepath.Join("..", "..")
+	if err := render.BuildSite(templateDir, rootDir, outDir, data); err != nil {
+		t.Fatalf("BuildSite failed: %v", err)
+	}
+
+	// contact.html must not exist in output or sitemap.xml
+	if _, err := os.Stat(filepath.Join(outDir, "contact.html")); !os.IsNotExist(err) {
+		t.Errorf("contact.html must not be generated")
+	}
+	sitemapRaw, err := os.ReadFile(filepath.Join(outDir, "sitemap.xml"))
+	if err != nil {
+		t.Fatalf("reading sitemap.xml: %v", err)
+	}
+	if strings.Contains(string(sitemapRaw), "contact.html") {
+		t.Errorf("sitemap.xml must not reference contact.html")
+	}
+
+	// Check root index.html and nested post page
+	indexRaw, err := os.ReadFile(filepath.Join(outDir, "index.html"))
+	if err != nil {
+		t.Fatalf("reading index.html: %v", err)
+	}
+	indexHTML := string(indexRaw)
+
+	for _, want := range []string{
+		`document.documentElement.classList.add('js')`,
+		`href="assets/resume.pdf"`,
+		`target="_blank" rel="noopener noreferrer"`,
+		`class="nav-toggle"`,
+		`id="nav-panel-backdrop"`,
+		`id="nav-panel"`,
+		`class="footer-socials"`,
+		`data-dock-state="docked"`,
+		`class="dock-sockets"`,
+		`class="dock-socket"`,
+		`class="dock-link"`,
+		`class="dock-bubble"`,
+	} {
+		if !strings.Contains(indexHTML, want) {
+			t.Errorf("index.html missing %q", want)
+		}
+	}
+
+	// #nav-panel must be a sibling after </nav>, not nested inside .sticky-nav
+	navCloseIdx := strings.Index(indexHTML, "</nav>")
+	panelIdx := strings.Index(indexHTML, `id="nav-panel"`)
+	if navCloseIdx == -1 || panelIdx == -1 || panelIdx < navCloseIdx {
+		t.Errorf("expected #nav-panel after closing </nav> of .sticky-nav")
+	}
+
+	postRaw, err := os.ReadFile(filepath.Join(outDir, "posts", data.SortedPosts[0].Slug, "index.html"))
+	if err != nil {
+		t.Fatalf("reading post page: %v", err)
+	}
+	if !strings.Contains(string(postRaw), `href="../../assets/resume.pdf"`) {
+		t.Errorf("post page missing relative ../../assets/resume.pdf link")
+	}
+
+	// Verify CSS tuning variables and view-transition-name rules
+	cssRaw, err := os.ReadFile(filepath.Join(outDir, "styles.css"))
+	if err != nil {
+		t.Fatalf("reading built styles.css: %v", err)
+	}
+	css := string(cssRaw)
+	for _, cssToken := range []string{
+		"--dock-size:",
+		"--dock-gap:",
+		"--dock-edge:",
+		"--dock-fly-duration:",
+		"--dock-stagger:",
+		"--dock-pop-scale:",
+		"--dock-ease:",
+		"--panel-width:",
+		"--panel-duration:",
+		"view-transition-name: dock-link-0;",
+		"text-transform: uppercase;",
+	} {
+		if !strings.Contains(css, cssToken) {
+			t.Errorf("styles.css missing %q", cssToken)
+		}
+	}
+}
