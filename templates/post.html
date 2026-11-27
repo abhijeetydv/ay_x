@@ -27,9 +27,36 @@
                     {{end}}
                 </header>
 
+                {{if .Post.ShowTOC}}
+                <div class="post-layout has-toc">
+                    <nav class="toc" aria-label="{{.Posts.PostPage.ContentsAriaLabel}}">
+                        <p class="toc-label">{{.Posts.PostPage.ContentsLabel}}</p>
+                        <ol class="toc-list">
+                            {{range .Post.TOC}}
+                            <li class="toc-item">
+                                <a href="#{{.ID}}" class="toc-link">{{.Text}}</a>
+                                {{if .Children}}
+                                <ol class="toc-sublist">
+                                    {{range .Children}}
+                                    <li class="toc-subitem">
+                                        <a href="#{{.ID}}" class="toc-link">{{.Text}}</a>
+                                    </li>
+                                    {{end}}
+                                </ol>
+                                {{end}}
+                            </li>
+                            {{end}}
+                        </ol>
+                    </nav>
+                    <div class="post-body">
+                        {{.Post.Body}}
+                    </div>
+                </div>
+                {{else}}
                 <div class="post-body">
                     {{.Post.Body}}
                 </div>
+                {{end}}
                 <span class="sr-only" role="status" aria-live="polite" id="copy-status"></span>
             </article>
         </div>
