@@ -30,8 +30,8 @@ dock:
     label: "Email"
     address: "abhijeet@example.com"
   items:
+    - "email"
     - "github"
     - "linkedin"
     - "x"
     - "instagram"
-    - "email"
