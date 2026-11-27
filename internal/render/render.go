@@ -40,6 +40,7 @@ type ArticleLink struct {
 
 // ArticleView provides unified data for templates/partials/article_layout.html.
 type ArticleView struct {
+	Variant           string
 	BackHref          string
 	BackLabel         string
 	Title             string
@@ -207,6 +208,7 @@ func BuildPages(templateDir, rootDir, outDir string, data *model.HomepageData, p
 				}
 			}
 			article = &ArticleView{
+				Variant:           "centered",
 				BackHref:          data.Posts.PostPage.BackHref,
 				BackLabel:         data.Posts.PostPage.BackLabel,
 				Title:             postPtr.Title,
@@ -248,6 +250,7 @@ func BuildPages(templateDir, rootDir, outDir string, data *model.HomepageData, p
 				})
 			}
 			article = &ArticleView{
+				Variant:           "split",
 				BackHref:          data.Projects.ProjectPage.BackHref,
 				BackLabel:         data.Projects.ProjectPage.BackLabel,
 				Title:             projPtr.Title,

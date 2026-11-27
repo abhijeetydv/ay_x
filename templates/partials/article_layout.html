@@ -1,5 +1,6 @@
 {{define "article_layout"}}
-            <article class="post-article">
+            <article class="post-article article-layout--{{.Article.Variant}}">
+                {{if eq .Article.Variant "split"}}
                 <div class="post-back">
                     <a href="{{rel .Root .Article.BackHref}}" class="back-link">{{.Article.BackLabel}}</a>
                 </div>
@@ -47,6 +48,33 @@
                     </div>
                     {{end}}
                 </header>
+                {{else}}
+                <header class="post-header">
+                    <a href="{{rel .Root .Article.BackHref}}" class="back-link">{{.Article.BackLabel}}</a>
+                    <h1 class="post-title-display">{{if .Article.TitleSegments}}{{range .Article.TitleSegments}}{{if .Color}}<span class="title-color title-{{.Color}}">{{.Text}}</span>{{else}}{{.Text}}{{end}}{{end}}{{else}}{{.Article.Title}}{{end}}</h1>
+                    {{if or .Article.Date .Article.Updated}}
+                    <div class="post-meta">
+                        {{if .Article.Date}}
+                        <time datetime="{{.Article.Date}}">{{.Article.FormattedDate}}</time>
+                        {{if .Article.Updated}}
+                        <span class="post-meta-sep">·</span>
+                        <span>{{.Article.UpdatedLabel}} <time datetime="{{.Article.Updated}}">{{.Article.FormattedUpdated}}</time></span>
+                        {{end}}
+                        {{else if .Article.Updated}}
+                        <span>{{.Article.UpdatedLabel}} <time datetime="{{.Article.Updated}}">{{.Article.FormattedUpdated}}</time></span>
+                        {{end}}
+                    </div>
+                    {{end}}
+                    {{if .Article.Tags}}
+                    <div class="post-tags">
+                        <svg class="post-tags-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                        {{range .Article.Tags}}
+                        <span class="tag {{tagColor .}}">{{.}}</span>
+                        {{end}}
+                    </div>
+                    {{end}}
+                </header>
+                {{end}}
 
                 {{if .Article.ShowTOC}}
                 <div class="post-layout has-toc">

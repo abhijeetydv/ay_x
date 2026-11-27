@@ -809,7 +809,7 @@ func TestProjectPagesEndToEnd(t *testing.T) {
 		html := string(raw)
 
 		// Shared-layout guard
-		if !strings.Contains(html, `<article class="post-article">`) || !strings.Contains(html, `class="post-title-display"`) {
+		if !strings.Contains(html, `<article class="post-article article-layout--split">`) || !strings.Contains(html, `class="post-title-display"`) {
 			t.Errorf("%s: missing shared article_layout classes", proj.Slug)
 		}
 
@@ -897,7 +897,7 @@ func TestProjectPagesEndToEnd(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reading post page: %v", err)
 	}
-	if !strings.Contains(string(postRaw), `<article class="post-article">`) {
+	if !strings.Contains(string(postRaw), `<article class="post-article article-layout--centered">`) {
 		t.Errorf("post page missing shared article_layout root")
 	}
 

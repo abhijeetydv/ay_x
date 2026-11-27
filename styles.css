@@ -842,41 +842,16 @@ a {
     padding: 36px 0 64px;
 }
 
-.post-back {
-    max-width: var(--width-post-body);
-    margin: 0 auto 16px;
-}
-
-.post-back .back-link {
-    margin-bottom: 0;
-}
-
-.post-header {
-    max-width: var(--width-post-body);
-    margin: 0 auto 40px;
-    text-align: left;
-}
-
-.post-title-row {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 14px;
-    margin-bottom: 18px;
-}
-
 .post-title-display {
     font-size: clamp(1.9rem, 4.5vw, 3.2rem);
     line-height: 1.14;
     text-transform: uppercase;
     letter-spacing: -0.02em;
     overflow-wrap: anywhere;
-    margin-bottom: 0;
 }
 
 .post-meta {
     display: flex;
-    justify-content: flex-start;
     align-items: center;
     gap: 10px;
     flex-wrap: wrap;
@@ -887,7 +862,6 @@ a {
 
 .post-tags {
     display: flex;
-    justify-content: flex-start;
     align-items: center;
     gap: 8px;
     flex-wrap: wrap;
@@ -898,7 +872,56 @@ a {
     flex-shrink: 0;
 }
 
-.post-header .project-summary {
+/* --- Centered Article Variant (Posts) --- */
+.article-layout--centered .post-header {
+    max-width: var(--width-post-title);
+    margin: 0 auto 40px;
+    text-align: center;
+}
+
+.article-layout--centered .post-title-display {
+    margin-bottom: 18px;
+}
+
+.article-layout--centered .post-meta,
+.article-layout--centered .post-tags {
+    justify-content: center;
+}
+
+/* --- Split Article Variant (Projects) --- */
+.article-layout--split .post-back {
+    max-width: var(--width-post-body);
+    margin: 0 auto 16px;
+}
+
+.article-layout--split .post-back .back-link {
+    margin-bottom: 0;
+}
+
+.article-layout--split .post-header {
+    max-width: var(--width-post-body);
+    margin: 0 auto 40px;
+    text-align: left;
+}
+
+.article-layout--split .post-title-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-bottom: 18px;
+}
+
+.article-layout--split .post-title-display {
+    margin-bottom: 0;
+}
+
+.article-layout--split .post-meta,
+.article-layout--split .post-tags {
+    justify-content: flex-start;
+}
+
+.article-layout--split .post-header .project-summary {
     max-width: 60ch;
     margin: 0 0 20px;
     font-size: 0.95rem;
@@ -1008,11 +1031,11 @@ a {
 }
 
 @media (min-width: 1000px) {
-    .post-article:has(.post-layout.has-toc) .post-back {
+    .article-layout--split:has(.post-layout.has-toc) .post-back {
         max-width: calc(240px + 48px + var(--width-post-body));
     }
 
-    .post-article:has(.post-layout.has-toc) .post-header {
+    .article-layout--split:has(.post-layout.has-toc) .post-header {
         max-width: calc(240px + 48px + var(--width-post-body));
         padding-left: calc(240px + 48px);
     }
