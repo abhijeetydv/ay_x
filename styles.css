@@ -1766,8 +1766,9 @@ a {
 }
 
 .dock-link {
+    position: relative;
     color: var(--text-muted);
-    transition: color 0.2s ease;
+    transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1779,6 +1780,99 @@ a {
 .dock-link:hover,
 .dock-link:focus-visible {
     color: var(--text-primary);
+}
+
+.dock-bubble {
+    position: absolute;
+    bottom: calc(100% + 10px);
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.18s ease, transform 0.18s ease;
+    z-index: 160;
+}
+
+.dock-bubble-title {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    letter-spacing: 0.03em;
+}
+
+.dock-bubble-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.dock-link:hover .dock-bubble,
+.dock-link:focus-visible .dock-bubble {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+@media (min-width: 1392px) and (min-height: 480px) {
+    .dock-socket {
+        width: var(--dock-size);
+        height: var(--dock-size);
+        border-radius: 8px;
+    }
+
+    .dock-link {
+        border-radius: 8px;
+    }
+
+    .dock-socket:nth-child(1) .dock-link { view-transition-name: dock-link-0; }
+    .dock-socket:nth-child(2) .dock-link { view-transition-name: dock-link-1; }
+    .dock-socket:nth-child(3) .dock-link { view-transition-name: dock-link-2; }
+    .dock-socket:nth-child(4) .dock-link { view-transition-name: dock-link-3; }
+    .dock-socket:nth-child(5) .dock-link { view-transition-name: dock-link-4; }
+    .dock-socket:nth-child(6) .dock-link { view-transition-name: dock-link-5; }
+
+    .footer-socials[data-dock-state="floating"] .dock-socket {
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.02);
+    }
+
+    .footer-socials[data-dock-state="floating"] .dock-link {
+        position: fixed;
+        right: var(--dock-edge);
+        bottom: calc(var(--dock-edge) + (var(--dock-count, 5) - 1 - var(--i, 0)) * (var(--dock-size) + var(--dock-gap)));
+        width: var(--dock-size);
+        height: var(--dock-size);
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+        z-index: 150;
+    }
+
+    .footer-socials[data-dock-state="floating"] .dock-link:hover,
+    .footer-socials[data-dock-state="floating"] .dock-link:focus-visible {
+        background: var(--bg-card-hover);
+        border-color: var(--border-light);
+    }
+
+    .footer-socials[data-dock-state="floating"] .dock-bubble {
+        bottom: auto;
+        left: auto;
+        right: calc(100% + 10px);
+        top: 50%;
+        transform: translateY(-50%) translateX(4px);
+    }
+
+    .footer-socials[data-dock-state="floating"] .dock-link:hover .dock-bubble,
+    .footer-socials[data-dock-state="floating"] .dock-link:focus-visible .dock-bubble {
+        transform: translateY(-50%) translateX(0);
+    }
 }
 
 /* --- Responsive --- */

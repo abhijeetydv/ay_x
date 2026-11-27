@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initSmoothScroll();
     initNavHighlight();
     initNavPanel();
+    initSocialDock();
     initCareerTabs();
     initCodeCopy();
     initTocHighlight();
@@ -750,4 +751,74 @@ function initNavPanel() {
             closePanel(false);
         }
     });
+}
+
+// --- Laptop Floating Social Dock ---
+const DOCK_FLOAT_MEDIA_QUERY = '(min-width: 1392px) and (min-height: 480px)';
+const DOCK_AT_PX = 24;
+const DOCK_UNDOCK_AT_PX = 8;
+
+function decideDockState(currentState, visibleFooterPx) {
+    if (visibleFooterPx >= DOCK_AT_PX) return 'docked';
+    if (visibleFooterPx <= DOCK_UNDOCK_AT_PX) return 'floating';
+    return currentState || 'floating';
+}
+
+function initSocialDock() {
+    const dock = document.querySelector('.footer-socials');
+    const footer = document.querySelector('.footer-panel');
+    if (!dock || !footer || typeof window.matchMedia !== 'function') return;
+
+    const floatQuery = window.matchMedia(DOCK_FLOAT_MEDIA_QUERY);
+    const scrollContainer = document.querySelector('.scroll-fade-wrapper');
+
+    function getVisibleFooterPx() {
+        const footerRect = footer.getBoundingClientRect();
+        const viewportBottom = scrollContainer
+            ? scrollContainer.getBoundingClientRect().bottom
+            : (window.innerHeight || document.documentElement.clientHeight || 0);
+        return viewportBottom - footerRect.top;
+    }
+
+    let currentState = null;
+
+    function applyState(nextState) {
+        if (currentState === nextState) return;
+        currentState = nextState;
+        dock.dataset.dockState = nextState;
+    }
+
+    function syncState() {
+        if (!floatQuery.matches) {
+            applyState('docked');
+            return;
+        }
+        const visiblePx = getVisibleFooterPx();
+        const nextState = decideDockState(currentState, visiblePx);
+        applyState(nextState);
+    }
+
+    syncState();
+
+    let rafId = 0;
+    function scheduleSync() {
+        if (rafId) return;
+        const schedule = typeof requestAnimationFrame === 'function'
+            ? requestAnimationFrame
+            : (fn) => setTimeout(fn, 16);
+        rafId = schedule(() => {
+            rafId = 0;
+            syncState();
+        });
+    }
+
+    if (scrollContainer) {
+        scrollContainer.addEventListener('scroll', scheduleSync, { passive: true });
+    }
+    window.addEventListener('scroll', scheduleSync, { passive: true });
+    window.addEventListener('resize', scheduleSync, { passive: true });
+    if (typeof floatQuery.addEventListener === 'function') {
+        floatQuery.addEventListener('change', syncState);
+    }
+    window.addEventListener('pageshow', syncState);
 }

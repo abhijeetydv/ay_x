@@ -27,12 +27,16 @@
                         {{end}}
                         {{if .DockItems}}
                         <span class="footer-sep">·</span>
-                        <nav class="footer-socials" aria-label="{{.Social.Dock.AriaLabel}}" data-dock-state="docked">
+                        <nav class="footer-socials" aria-label="{{.Social.Dock.AriaLabel}}" data-dock-state="docked" style="--dock-count: {{len .DockItems}}">
                             <ul class="dock-sockets">
                                 {{range $i, $item := .DockItems}}
                                 <li class="dock-socket" style="--i: {{$i}}">
                                     <a href="{{$item.Href}}"{{if $item.IsExternal}} target="_blank" rel="noopener noreferrer"{{end}} class="dock-link" aria-label="{{$item.Label}}">
                                         {{template "social_icon_18" $item.Platform}}
+                                        <span class="dock-bubble" aria-hidden="true">
+                                            <span class="dock-bubble-title">{{$.Social.Dock.BubbleTitle}}</span>
+                                            <span class="dock-bubble-label">{{$item.Label}}</span>
+                                        </span>
                                     </a>
                                 </li>
                                 {{end}}
