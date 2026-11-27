@@ -12,10 +12,15 @@ theme_color: "#000000"
 nav:
   logo: "~/"
   logo_href: "index.html"
+  new_tab_label: "opens in a new tab"
+  menu_open_label: "Open navigation menu"
+  menu_close_label: "Close navigation menu"
+  panel_aria_label: "Mobile navigation"
   page_paths:
     home: ""
     about: "about"
     projects: "projects"
+    posts: "posts"
   links:
     - label: "About"
       href: "about.html"
@@ -23,6 +28,12 @@ nav:
     - label: "Projects"
       href: "projects.html"
       page: "projects"
+    - label: "Posts"
+      href: "posts.html"
+      page: "posts"
+    - label: "Resume"
+      href: "assets/resume.pdf"
+      new_tab: true
 
 sections:
   - key: "hero"

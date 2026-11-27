@@ -1,18 +1,44 @@
 package model
 
+import "html/template"
+
+// AllowedTitleColors defines the single source of truth for post title_colors entries:
+// red, orange, yellow, green, cyan, blue, purple, pink, white, gray.
+// To add a new colour:
+//  1. Add its name to AllowedTitleColors here.
+//  2. Add --color-<name> and .title-<name> in styles.css (a test enforces this).
+//  3. Update the example comment in content/posts/*.md if desired.
+var AllowedTitleColors = []string{
+	"red",
+	"orange",
+	"yellow",
+	"green",
+	"cyan",
+	"blue",
+	"purple",
+	"pink",
+	"white",
+	"gray",
+}
+
 // Link represents a labeled hyperlink.
 type Link struct {
-	Label string `yaml:"label"`
-	Href  string `yaml:"href"`
-	Page  string `yaml:"page,omitempty"`
+	Label  string `yaml:"label"`
+	Href   string `yaml:"href"`
+	Page   string `yaml:"page,omitempty"`
+	NewTab bool   `yaml:"new_tab,omitempty"`
 }
 
 // NavConfig holds navbar brand and link items.
 type NavConfig struct {
-	Logo      string            `yaml:"logo"`
-	LogoHref  string            `yaml:"logo_href"`
-	PagePaths map[string]string `yaml:"page_paths"`
-	Links     []Link            `yaml:"links"`
+	Logo           string            `yaml:"logo"`
+	LogoHref       string            `yaml:"logo_href"`
+	NewTabLabel    string            `yaml:"new_tab_label,omitempty"`
+	MenuOpenLabel  string            `yaml:"menu_open_label"`
+	MenuCloseLabel string            `yaml:"menu_close_label"`
+	PanelAriaLabel string            `yaml:"panel_aria_label"`
+	PagePaths      map[string]string `yaml:"page_paths"`
+	Links          []Link            `yaml:"links"`
 }
 
 // SectionConfig controls homepage section visibility and ordering.
@@ -66,10 +92,33 @@ type SocialLink struct {
 	URL      string `yaml:"url"`
 }
 
+// DockEmailConfig configures the email entry in the social dock.
+type DockEmailConfig struct {
+	Label   string `yaml:"label"`
+	Address string `yaml:"address"`
+}
+
+// DockConfig configures the footer / floating social dock.
+type DockConfig struct {
+	AriaLabel   string          `yaml:"aria_label"`
+	BubbleTitle string          `yaml:"bubble_title"`
+	Email       DockEmailConfig `yaml:"email"`
+	Items       []string        `yaml:"items"`
+}
+
+// DockItem is a resolved entry ready for rendering in the social dock.
+type DockItem struct {
+	Platform   string
+	Label      string
+	Href       string
+	IsExternal bool
+}
+
 // SocialConfig represents content/social.yaml.
 type SocialConfig struct {
 	HeroLinks   []SocialLink `yaml:"hero_links"`
 	FooterLinks []SocialLink `yaml:"footer_links"`
+	Dock        DockConfig   `yaml:"dock"`
 }
 
 // ExperienceBarItem represents an item in the compact experience strip.
@@ -147,7 +196,6 @@ type ConnectCardConfig struct {
 	Title       string `yaml:"title"`
 	Description string `yaml:"description"`
 	CTALabel    string `yaml:"cta_label"`
-	CTAHref     string `yaml:"cta_href"`
 }
 
 // LocationCardConfig configures the Currently Based In tile.
@@ -165,18 +213,82 @@ type PlaceholderTileConfig struct {
 	Enabled bool `yaml:"enabled"`
 }
 
-// PostItem represents a blog post entry on the homepage.
-type PostItem struct {
-	Title string `yaml:"title"`
-	Href  string `yaml:"href"`
-	Date  string `yaml:"date"`
+// PostsPageConfig configures posts.html metadata and copy.
+type PostsPageConfig struct {
+	Title        string `yaml:"title"`
+	Description  string `yaml:"description"`
+	Heading      string `yaml:"heading"`
+	Intro        string `yaml:"intro"`
+	BackLabel    string `yaml:"back_label"`
+	BackHref     string `yaml:"back_href"`
+	EmptyMessage string `yaml:"empty_message"`
+	DateFormat   string `yaml:"date_format"`
 }
 
-// PostsCardConfig configures the Latest Posts card.
-type PostsCardConfig struct {
-	Title        string     `yaml:"title"`
-	ExternalHref string     `yaml:"external_href"`
-	Items        []PostItem `yaml:"items"`
+// PostsHomeTileConfig configures the home page latest-post tile.
+type PostsHomeTileConfig struct {
+	Title         string `yaml:"title"`
+	AllPostsLabel string `yaml:"all_posts_label"`
+	AllPostsHref  string `yaml:"all_posts_href"`
+}
+
+// PostPageConfig configures individual post pages (posts/<slug>/index.html).
+type PostPageConfig struct {
+	BackLabel         string `yaml:"back_label"`
+	BackHref          string `yaml:"back_href"`
+	UpdatedLabel      string `yaml:"updated_label"`
+	CopyLabel         string `yaml:"copy_label"`
+	CopiedLabel       string `yaml:"copied_label"`
+	ContentsLabel     string `yaml:"contents_label"`
+	ContentsAriaLabel string `yaml:"contents_aria_label"`
+	TOCMinItems       int    `yaml:"toc_min_items"`
+}
+
+// TOCItem represents a heading entry in a post's table of contents.
+type TOCItem struct {
+	ID       string
+	Text     string
+	Level    int
+	Children []TOCItem
+}
+
+// TitleColor represents a coloured substring rule from post front matter.
+type TitleColor struct {
+	Text  string
+	Color string
+}
+
+// TitleSegment represents an ordered plain or coloured segment of a post title.
+type TitleSegment struct {
+	Text  string
+	Color string
+}
+
+// Post represents a single Markdown blog post loaded from content/posts/*.md.
+type Post struct {
+	Slug             string
+	SourcePath       string
+	Title            string
+	TitleColors      []TitleColor
+	TitleSegments    []TitleSegment
+	Date             string
+	FormattedDate    string
+	Updated          string
+	FormattedUpdated string
+	Summary          string
+	Tags             []string
+	RawBody          string
+	Body             template.HTML
+	TOC              []TOCItem
+	ShowTOC          bool
+	URL              string
+}
+
+// PostsConfig represents content/posts.yaml.
+type PostsConfig struct {
+	Page     PostsPageConfig     `yaml:"page"`
+	HomeTile PostsHomeTileConfig `yaml:"home_tile"`
+	PostPage PostPageConfig      `yaml:"post_page"`
 }
 
 // FallbackCommit represents a fallback commit row in the GitHub Activity card.
@@ -208,7 +320,6 @@ type AboutConfig struct {
 	Connect         ConnectCardConfig     `yaml:"connect"`
 	Location        LocationCardConfig    `yaml:"location"`
 	PlaceholderTile PlaceholderTileConfig `yaml:"placeholder_tile"`
-	Posts           PostsCardConfig       `yaml:"posts"`
 	GitHubCard      GitHubCardConfig      `yaml:"github_card"`
 }
 
@@ -253,6 +364,7 @@ type HomepageData struct {
 	Site             SiteConfig
 	Hero             HeroConfig
 	Social           SocialConfig
+	DockItems        []DockItem
 	Experience       ExperienceConfig
 	Projects         ProjectsConfig
 	FeaturedProjects []ProjectItem
@@ -260,6 +372,9 @@ type HomepageData struct {
 	Skills           SkillsConfig
 	About            AboutConfig
 	AboutPage        AboutPageConfig
+	Posts            PostsConfig
+	SortedPosts      []Post
+	LatestPost       *Post
 	Footer           FooterConfig
 	OrderedSections  []string
 }

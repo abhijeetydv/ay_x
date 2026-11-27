@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"portfolio/internal/model"
@@ -31,6 +32,7 @@ var (
 	}
 	hexColorRe = regexp.MustCompile(`^#[0-9a-fA-F]{3,8}$`)
 	percentRe  = regexp.MustCompile(`^[0-9]+(\.[0-9]+)?%$`)
+	slugRe     = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
 )
 
 // Homepage validates all loaded YAML content and prepares derived slices
@@ -46,11 +48,14 @@ func Homepage(data *model.HomepageData) error {
 	validateSkills(&data.Skills, &errs)
 	validateAbout(&data.About, &errs)
 	validateAboutPage(&data.AboutPage, &errs)
+	validatePosts(&data.Posts, data.SortedPosts, &errs)
 	validateFooter(&data.Footer, &errs)
 
 	if len(errs) > 0 {
 		return errors.New("content validation failed:\n  - " + strings.Join(errs, "\n  - "))
 	}
+
+	data.DockItems = ResolveDockItems(&data.Social)
 
 	// Build ordered, enabled section keys.
 	if len(data.Site.Sections) == 0 {
@@ -121,10 +126,19 @@ func validateSite(s *model.SiteConfig, errs *[]string) {
 	if strings.TrimSpace(s.Nav.Logo) == "" {
 		*errs = append(*errs, "site.yaml: nav.logo is required")
 	}
+	if strings.TrimSpace(s.Nav.MenuOpenLabel) == "" {
+		*errs = append(*errs, "site.yaml: nav.menu_open_label is required")
+	}
+	if strings.TrimSpace(s.Nav.MenuCloseLabel) == "" {
+		*errs = append(*errs, "site.yaml: nav.menu_close_label is required")
+	}
+	if strings.TrimSpace(s.Nav.PanelAriaLabel) == "" {
+		*errs = append(*errs, "site.yaml: nav.panel_aria_label is required")
+	}
 	if s.Nav.LogoHref != "" && !isSafeHref(s.Nav.LogoHref) {
 		*errs = append(*errs, fmt.Sprintf("site.yaml: invalid nav.logo_href %q", s.Nav.LogoHref))
 	}
-	for _, requiredKey := range []string{"home", "about", "projects"} {
+	for _, requiredKey := range []string{"home", "about", "projects", "posts"} {
 		if _, ok := s.Nav.PagePaths[requiredKey]; !ok {
 			*errs = append(*errs, fmt.Sprintf("site.yaml: nav.page_paths.%s is required", requiredKey))
 		}
@@ -138,6 +152,7 @@ func validateSite(s *model.SiteConfig, errs *[]string) {
 			*errs = append(*errs, fmt.Sprintf("site.yaml: nav.page_paths.%s %q must not contain '/' or whitespace", key, seg))
 		}
 	}
+	hasNewTab := false
 	for i, l := range s.Nav.Links {
 		if strings.TrimSpace(l.Label) == "" {
 			*errs = append(*errs, fmt.Sprintf("site.yaml: nav.links[%d].label is required", i))
@@ -145,6 +160,17 @@ func validateSite(s *model.SiteConfig, errs *[]string) {
 		if !isSafeHref(l.Href) {
 			*errs = append(*errs, fmt.Sprintf("site.yaml: nav.links[%d].href %q is invalid", i, l.Href))
 		}
+		if strings.HasPrefix(l.Href, "assets/") {
+			if err := validateAssetImage(l.Href); err != nil {
+				*errs = append(*errs, fmt.Sprintf("site.yaml: nav.links[%d].href: %v", i, err))
+			}
+		}
+		if l.NewTab {
+			hasNewTab = true
+		}
+	}
+	if hasNewTab && strings.TrimSpace(s.Nav.NewTabLabel) == "" {
+		*errs = append(*errs, "site.yaml: nav.new_tab_label is required when any nav link has new_tab: true")
 	}
 	seenSections := map[string]bool{}
 	for i, sec := range s.Sections {
@@ -194,6 +220,74 @@ func validateSocial(s *model.SocialConfig, errs *[]string) {
 	}
 	check("hero_links", s.HeroLinks)
 	check("footer_links", s.FooterLinks)
+
+	if strings.TrimSpace(s.Dock.AriaLabel) == "" {
+		*errs = append(*errs, "social.yaml: dock.aria_label is required")
+	}
+	if strings.TrimSpace(s.Dock.BubbleTitle) == "" {
+		*errs = append(*errs, "social.yaml: dock.bubble_title is required")
+	}
+	if strings.TrimSpace(s.Dock.Email.Label) == "" {
+		*errs = append(*errs, "social.yaml: dock.email.label is required")
+	}
+	if !isValidEmail(s.Dock.Email.Address) {
+		*errs = append(*errs, fmt.Sprintf("social.yaml: dock.email.address %q is invalid", s.Dock.Email.Address))
+	}
+	if len(s.Dock.Items) == 0 {
+		*errs = append(*errs, "social.yaml: dock.items must not be empty")
+	}
+	footerByID := make(map[string]model.SocialLink, len(s.FooterLinks))
+	for _, l := range s.FooterLinks {
+		footerByID[strings.ToLower(l.Platform)] = l
+	}
+	seenDock := make(map[string]bool, len(s.Dock.Items))
+	for i, rawID := range s.Dock.Items {
+		id := strings.ToLower(strings.TrimSpace(rawID))
+		if id == "" {
+			*errs = append(*errs, fmt.Sprintf("social.yaml: dock.items[%d] must not be empty", i))
+			continue
+		}
+		if seenDock[id] {
+			*errs = append(*errs, fmt.Sprintf("social.yaml: dock.items[%d] duplicate id %q", i, rawID))
+			continue
+		}
+		seenDock[id] = true
+		if id != "email" {
+			if _, ok := footerByID[id]; !ok {
+				*errs = append(*errs, fmt.Sprintf("social.yaml: dock.items[%d] %q does not match any footer_links platform or \"email\"", i, rawID))
+			}
+		}
+	}
+}
+
+// ResolveDockItems builds the ordered list of dock items from SocialConfig.
+func ResolveDockItems(s *model.SocialConfig) []model.DockItem {
+	footerByID := make(map[string]model.SocialLink, len(s.FooterLinks))
+	for _, l := range s.FooterLinks {
+		footerByID[strings.ToLower(l.Platform)] = l
+	}
+	items := make([]model.DockItem, 0, len(s.Dock.Items))
+	for _, rawID := range s.Dock.Items {
+		id := strings.ToLower(strings.TrimSpace(rawID))
+		if id == "email" {
+			items = append(items, model.DockItem{
+				Platform:   "email",
+				Label:      s.Dock.Email.Label,
+				Href:       "mailto:" + s.Dock.Email.Address,
+				IsExternal: false,
+			})
+			continue
+		}
+		if link, ok := footerByID[id]; ok {
+			items = append(items, model.DockItem{
+				Platform:   id,
+				Label:      link.Label,
+				Href:       link.URL,
+				IsExternal: true,
+			})
+		}
+	}
+	return items
 }
 
 func validateExperience(e *model.ExperienceConfig, errs *[]string) {
@@ -281,9 +375,6 @@ func validateAbout(a *model.AboutConfig, errs *[]string) {
 	if strings.TrimSpace(a.Connect.Title) == "" {
 		*errs = append(*errs, "about.yaml: connect.title is required")
 	}
-	if a.Connect.CTAHref != "" && !isSafeHref(a.Connect.CTAHref) {
-		*errs = append(*errs, fmt.Sprintf("about.yaml: connect.cta_href %q is invalid", a.Connect.CTAHref))
-	}
 	if strings.TrimSpace(a.Location.Title) == "" || strings.TrimSpace(a.Location.Name) == "" {
 		*errs = append(*errs, "about.yaml: location.title and location.name are required")
 	}
@@ -292,17 +383,6 @@ func validateAbout(a *model.AboutConfig, errs *[]string) {
 	}
 	if strings.TrimSpace(a.Location.MapAlt) == "" {
 		*errs = append(*errs, "about.yaml: location.map_alt is required")
-	}
-	if a.Posts.ExternalHref != "" && !isSafeHref(a.Posts.ExternalHref) {
-		*errs = append(*errs, fmt.Sprintf("about.yaml: posts.external_href %q is invalid", a.Posts.ExternalHref))
-	}
-	for i, post := range a.Posts.Items {
-		if strings.TrimSpace(post.Title) == "" {
-			*errs = append(*errs, fmt.Sprintf("about.yaml: posts.items[%d].title is required", i))
-		}
-		if !isSafeHref(post.Href) {
-			*errs = append(*errs, fmt.Sprintf("about.yaml: posts.items[%d].href %q is invalid", i, post.Href))
-		}
 	}
 	if a.GitHubCard.ViewHref != "" && !isSafeHref(a.GitHubCard.ViewHref) {
 		*errs = append(*errs, fmt.Sprintf("about.yaml: github_card.view_href %q is invalid", a.GitHubCard.ViewHref))
@@ -356,6 +436,148 @@ func validateAboutPage(a *model.AboutPageConfig, errs *[]string) {
 	if !isSafeHref(a.ProjectsHref) {
 		*errs = append(*errs, fmt.Sprintf("about_page.yaml: projects_href %q is invalid", a.ProjectsHref))
 	}
+}
+
+func validatePosts(p *model.PostsConfig, postItems []model.Post, errs *[]string) {
+	if strings.TrimSpace(p.Page.Title) == "" {
+		*errs = append(*errs, "posts.yaml: page.title is required")
+	}
+	validateDescription("posts.yaml: page.description", p.Page.Description, errs)
+	if strings.TrimSpace(p.Page.Heading) == "" {
+		*errs = append(*errs, "posts.yaml: page.heading is required")
+	}
+	if strings.TrimSpace(p.Page.Intro) == "" {
+		*errs = append(*errs, "posts.yaml: page.intro is required")
+	}
+	if strings.TrimSpace(p.Page.BackLabel) == "" {
+		*errs = append(*errs, "posts.yaml: page.back_label is required")
+	}
+	if !isSafeHref(p.Page.BackHref) {
+		*errs = append(*errs, fmt.Sprintf("posts.yaml: page.back_href %q is invalid", p.Page.BackHref))
+	}
+	if strings.TrimSpace(p.Page.EmptyMessage) == "" {
+		*errs = append(*errs, "posts.yaml: page.empty_message is required")
+	}
+	if strings.TrimSpace(p.Page.DateFormat) == "" {
+		*errs = append(*errs, "posts.yaml: page.date_format is required")
+	}
+	if strings.TrimSpace(p.HomeTile.Title) == "" {
+		*errs = append(*errs, "posts.yaml: home_tile.title is required")
+	}
+	if strings.TrimSpace(p.HomeTile.AllPostsLabel) == "" {
+		*errs = append(*errs, "posts.yaml: home_tile.all_posts_label is required")
+	}
+	if !isSafeHref(p.HomeTile.AllPostsHref) {
+		*errs = append(*errs, fmt.Sprintf("posts.yaml: home_tile.all_posts_href %q is invalid", p.HomeTile.AllPostsHref))
+	}
+	if strings.TrimSpace(p.PostPage.BackLabel) == "" {
+		*errs = append(*errs, "posts.yaml: post_page.back_label is required")
+	}
+	if !isSafeHref(p.PostPage.BackHref) {
+		*errs = append(*errs, fmt.Sprintf("posts.yaml: post_page.back_href %q is invalid", p.PostPage.BackHref))
+	}
+	if strings.TrimSpace(p.PostPage.UpdatedLabel) == "" {
+		*errs = append(*errs, "posts.yaml: post_page.updated_label is required")
+	}
+	if strings.TrimSpace(p.PostPage.CopyLabel) == "" {
+		*errs = append(*errs, "posts.yaml: post_page.copy_label is required")
+	}
+	if strings.TrimSpace(p.PostPage.CopiedLabel) == "" {
+		*errs = append(*errs, "posts.yaml: post_page.copied_label is required")
+	}
+	if strings.TrimSpace(p.PostPage.ContentsLabel) == "" {
+		*errs = append(*errs, "posts.yaml: post_page.contents_label is required")
+	}
+	if strings.TrimSpace(p.PostPage.ContentsAriaLabel) == "" {
+		*errs = append(*errs, "posts.yaml: post_page.contents_aria_label is required")
+	}
+	if p.PostPage.TOCMinItems < 1 {
+		*errs = append(*errs, "posts.yaml: post_page.toc_min_items must be at least 1")
+	}
+
+	allowedColors := make(map[string]bool, len(model.AllowedTitleColors))
+	sortedAllowed := make([]string, len(model.AllowedTitleColors))
+	copy(sortedAllowed, model.AllowedTitleColors)
+	sort.Strings(sortedAllowed)
+	for _, c := range model.AllowedTitleColors {
+		allowedColors[c] = true
+	}
+
+	seenSlugs := map[string]bool{}
+	for _, item := range postItems {
+		loc := item.SourcePath
+		if loc == "" {
+			loc = item.Slug
+		}
+		if !slugRe.MatchString(item.Slug) {
+			*errs = append(*errs, fmt.Sprintf("%s: slug %q must match ^[a-z0-9]+(-[a-z0-9]+)*$", loc, item.Slug))
+		} else if seenSlugs[item.Slug] {
+			*errs = append(*errs, fmt.Sprintf("%s: duplicate post slug %q", loc, item.Slug))
+		}
+		seenSlugs[item.Slug] = true
+
+		if strings.TrimSpace(item.Title) == "" {
+			*errs = append(*errs, fmt.Sprintf("%s: title is required", loc))
+		}
+		if _, err := time.Parse("2006-01-02", item.Date); err != nil {
+			*errs = append(*errs, fmt.Sprintf("%s: date %q must be YYYY-MM-DD", loc, item.Date))
+		}
+		if item.Updated != "" {
+			if _, err := time.Parse("2006-01-02", item.Updated); err != nil {
+				*errs = append(*errs, fmt.Sprintf("%s: updated %q must be YYYY-MM-DD", loc, item.Updated))
+			}
+		}
+		validateDescription(fmt.Sprintf("%s: summary", loc), item.Summary, errs)
+
+		for j, tag := range item.Tags {
+			if strings.TrimSpace(tag) == "" || strings.ContainsAny(tag, " \t\r\n") || tag != strings.ToLower(tag) {
+				*errs = append(*errs, fmt.Sprintf("%s: tags[%d] %q must be a non-empty lowercase string without whitespace", loc, j, tag))
+			}
+		}
+
+		if len(item.TitleColors) > 0 {
+			type span struct {
+				start int
+				end   int
+				idx   int
+			}
+			var spans []span
+			for j, tc := range item.TitleColors {
+				if !allowedColors[tc.Color] {
+					*errs = append(*errs, fmt.Sprintf("%s: title_colors[%d].color %q is not allowed (allowed: %s)", loc, j, tc.Color, strings.Join(sortedAllowed, ", ")))
+				}
+				if tc.Text == "" {
+					*errs = append(*errs, fmt.Sprintf("%s: title_colors[%d].text must not be empty", loc, j))
+					continue
+				}
+				// If text appears more than once in title, the FIRST occurrence is coloured.
+				idx := strings.Index(item.Title, tc.Text)
+				if idx == -1 {
+					*errs = append(*errs, fmt.Sprintf("%s: title_colors[%d].text %q was not found in title %q (exact, case-sensitive)", loc, j, tc.Text, item.Title))
+					continue
+				}
+				start, end := idx, idx+len(tc.Text)
+				for _, prev := range spans {
+					if start < prev.end && prev.start < end {
+						*errs = append(*errs, fmt.Sprintf("%s: title_colors[%d] (%q) overlaps with title_colors[%d]", loc, j, tc.Text, prev.idx))
+						break
+					}
+				}
+				spans = append(spans, span{start: start, end: end, idx: j})
+			}
+		}
+	}
+}
+
+func isValidEmail(raw string) bool {
+	if raw == "" || strings.ContainsAny(raw, " \t\r\n") {
+		return false
+	}
+	parts := strings.Split(raw, "@")
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return false
+	}
+	return strings.Contains(parts[1], ".") && !strings.HasPrefix(parts[1], ".") && !strings.HasSuffix(parts[1], ".")
 }
 
 func validateFooter(f *model.FooterConfig, errs *[]string) {

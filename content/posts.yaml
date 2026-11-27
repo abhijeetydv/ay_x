@@ -1,0 +1,24 @@
+page:
+  title: "Posts — Abhijeet"
+  description: "Technical writing on Go, Redis, Docker, backend architecture, and distributed systems by Abhijeet Yadav."
+  heading: "Posts"
+  intro: "Notes on backend engineering, caching, containers, and systems design."
+  back_label: "← Back to home"
+  back_href: "index.html"
+  empty_message: "No posts published yet."
+  date_format: "Jan 2, 2006"
+
+home_tile:
+  title: "Latest Posts"
+  all_posts_label: "All posts →"
+  all_posts_href: "posts.html"
+
+post_page:
+  back_label: "← Back to posts"
+  back_href: "posts.html"
+  updated_label: "Updated"
+  copy_label: "Copy code"
+  copied_label: "Copied"
+  contents_label: "[contents]"
+  contents_aria_label: "Table of contents"
+  toc_min_items: 2

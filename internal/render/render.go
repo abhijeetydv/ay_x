@@ -3,13 +3,17 @@ package render
 import (
 	"encoding/xml"
 	"fmt"
+	"hash/fnv"
 	"html/template"
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
+	"time"
 
 	"portfolio/internal/model"
+	"portfolio/internal/posts"
 )
 
 // PageSpec describes a single generated HTML page.
@@ -18,15 +22,19 @@ type PageSpec struct {
 	Template      string
 	Output        string
 	CanonicalPath string
+	OGType        string
 	PathSegments  func(*model.HomepageData) []string
 	Title         func(*model.HomepageData) string
 	Description   func(*model.HomepageData) string
+	Post          *model.Post
 }
 
 // PageContext wraps HomepageData with the active page metadata.
 type PageContext struct {
 	*model.HomepageData
 	Page            string
+	Root            string
+	OGType          string
 	PageTitle       string
 	PageDescription string
 	CanonicalURL    string
@@ -34,6 +42,7 @@ type PageContext struct {
 	FaviconType     string
 	PathSegments    []string
 	LogoText        string
+	Post            *model.Post
 }
 
 // DefaultPages returns the configured pages to generate for the site.
@@ -63,13 +72,45 @@ func DefaultPages() []PageSpec {
 			Title:         func(d *model.HomepageData) string { return d.Projects.Page.Title },
 			Description:   func(d *model.HomepageData) string { return d.Projects.Page.Description },
 		},
+		{
+			Key:           "posts",
+			Template:      "posts.html",
+			Output:        "posts.html",
+			CanonicalPath: "posts.html",
+			Title:         func(d *model.HomepageData) string { return d.Posts.Page.Title },
+			Description:   func(d *model.HomepageData) string { return d.Posts.Page.Description },
+		},
 	}
 }
 
-// BuildSite renders all configured pages from a single loaded HomepageData
-// and copies static assets (styles.css, script.js, and optional assets/) once.
+// BuildSite renders all configured pages (including individual post pages)
+// from a single loaded HomepageData and copies static assets once.
 func BuildSite(templateDir, rootDir, outDir string, data *model.HomepageData) error {
-	return BuildPages(templateDir, rootDir, outDir, data, DefaultPages())
+	if err := preparePosts(data); err != nil {
+		return err
+	}
+	return BuildPages(templateDir, rootDir, outDir, data, SitePages(data))
+}
+
+// SitePages returns all static pages plus one PageSpec per post.
+func SitePages(data *model.HomepageData) []PageSpec {
+	pages := DefaultPages()
+	for i := range data.SortedPosts {
+		post := data.SortedPosts[i]
+		pCopy := post
+		pages = append(pages, PageSpec{
+			Key:           "posts",
+			Template:      "post.html",
+			Output:        filepath.ToSlash(filepath.Join("posts", pCopy.Slug, "index.html")),
+			CanonicalPath: "posts/" + pCopy.Slug + "/",
+			OGType:        "article",
+			PathSegments:  func(*model.HomepageData) []string { return []string{"posts", pCopy.Slug} },
+			Title:         func(*model.HomepageData) string { return pCopy.Title },
+			Description:   func(*model.HomepageData) string { return pCopy.Summary },
+			Post:          &pCopy,
+		})
+	}
+	return pages
 }
 
 // BuildPages renders the given pages from a single loaded HomepageData
@@ -77,6 +118,10 @@ func BuildSite(templateDir, rootDir, outDir string, data *model.HomepageData) er
 func BuildPages(templateDir, rootDir, outDir string, data *model.HomepageData, pages []PageSpec) error {
 	if err := os.MkdirAll(outDir, 0o755); err != nil {
 		return fmt.Errorf("creating output directory %s: %w", outDir, err)
+	}
+
+	if err := preparePosts(data); err != nil {
+		return err
 	}
 
 	for _, p := range pages {
@@ -92,12 +137,27 @@ func BuildPages(templateDir, rootDir, outDir string, data *model.HomepageData, p
 				desc = d
 			}
 		}
+		ogType := p.OGType
+		if ogType == "" {
+			ogType = "website"
+		}
 		tmplPath := filepath.Join(templateDir, p.Template)
-		outHTML := filepath.Join(outDir, p.Output)
+		outHTML := filepath.Join(outDir, filepath.FromSlash(p.Output))
 		segments := resolvePathSegments(data, p)
+		postPtr := p.Post
+		if postPtr != nil {
+			for idx := range data.SortedPosts {
+				if data.SortedPosts[idx].Slug == postPtr.Slug {
+					postPtr = &data.SortedPosts[idx]
+					break
+				}
+			}
+		}
 		if err := renderPage(tmplPath, outHTML, PageContext{
 			HomepageData:    data,
 			Page:            p.Key,
+			Root:            rootPrefix(p.Output),
+			OGType:          ogType,
 			PageTitle:       title,
 			PageDescription: desc,
 			CanonicalURL:    data.Site.URL + p.CanonicalPath,
@@ -105,6 +165,7 @@ func BuildPages(templateDir, rootDir, outDir string, data *model.HomepageData, p
 			FaviconType:     faviconMIMEType(data.Site.Favicon),
 			PathSegments:    segments,
 			LogoText:        data.Site.Nav.Logo + strings.Join(segments, "/"),
+			Post:            postPtr,
 		}); err != nil {
 			return err
 		}
@@ -159,6 +220,162 @@ func writeRobots(outPath, baseURL string) error {
 	return nil
 }
 
+func preparePosts(data *model.HomepageData) error {
+	items := make([]model.Post, len(data.SortedPosts))
+	copy(items, data.SortedPosts)
+
+	dateFormat := data.Posts.Page.DateFormat
+	if dateFormat == "" {
+		dateFormat = "Jan 2, 2006"
+	}
+
+	labels := posts.CopyLabels{
+		Copy:   data.Posts.PostPage.CopyLabel,
+		Copied: data.Posts.PostPage.CopiedLabel,
+	}
+
+	parsedDates := make(map[string]time.Time, len(items))
+	for i := range items {
+		t, err := time.Parse("2006-01-02", items[i].Date)
+		if err == nil {
+			parsedDates[items[i].Date] = t
+			items[i].FormattedDate = t.Format(dateFormat)
+		} else {
+			items[i].FormattedDate = items[i].Date
+		}
+		if items[i].Updated != "" {
+			if ut, uerr := time.Parse("2006-01-02", items[i].Updated); uerr == nil {
+				items[i].FormattedUpdated = ut.Format(dateFormat)
+			} else {
+				items[i].FormattedUpdated = items[i].Updated
+			}
+		}
+		if items[i].RawBody != "" && items[i].Body == "" {
+			rendered, rawTOC, err := posts.RenderMarkdownWithTOC(items[i].RawBody, labels)
+			if err != nil {
+				return fmt.Errorf("rendering post %s: %w", items[i].Slug, err)
+			}
+			items[i].Body = rendered
+			items[i].TOC = convertTOC(rawTOC)
+			items[i].ShowTOC = countTOCItems(items[i].TOC) >= data.Posts.PostPage.TOCMinItems
+		}
+		if items[i].URL == "" || items[i].URL == "#" {
+			items[i].URL = "posts/" + items[i].Slug + "/"
+		}
+		items[i].TitleSegments = splitTitleSegments(items[i].Title, items[i].TitleColors)
+	}
+
+	sort.SliceStable(items, func(i, j int) bool {
+		ti, oki := parsedDates[items[i].Date]
+		tj, okj := parsedDates[items[j].Date]
+		if oki && okj && !ti.Equal(tj) {
+			return ti.After(tj)
+		}
+		if items[i].Date != items[j].Date {
+			return items[i].Date > items[j].Date
+		}
+		return items[i].Slug < items[j].Slug
+	})
+
+	data.SortedPosts = items
+	if len(items) > 0 {
+		latest := items[0]
+		data.LatestPost = &latest
+	} else {
+		data.LatestPost = nil
+	}
+	return nil
+}
+
+func convertTOC(in []posts.TOCItem) []model.TOCItem {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make([]model.TOCItem, len(in))
+	for i, item := range in {
+		out[i] = model.TOCItem{
+			ID:       item.ID,
+			Text:     item.Text,
+			Level:    item.Level,
+			Children: convertTOC(item.Children),
+		}
+	}
+	return out
+}
+
+func countTOCItems(items []model.TOCItem) int {
+	total := 0
+	for _, item := range items {
+		total++
+		total += len(item.Children)
+	}
+	return total
+}
+
+func splitTitleSegments(title string, colors []model.TitleColor) []model.TitleSegment {
+	if len(colors) == 0 {
+		return nil
+	}
+	type match struct {
+		start int
+		end   int
+		color string
+	}
+	var matches []match
+	for _, tc := range colors {
+		if tc.Text == "" {
+			continue
+		}
+		// Always colour the first occurrence in title.
+		idx := strings.Index(title, tc.Text)
+		if idx == -1 {
+			continue
+		}
+		matches = append(matches, match{
+			start: idx,
+			end:   idx + len(tc.Text),
+			color: tc.Color,
+		})
+	}
+	if len(matches) == 0 {
+		return nil
+	}
+	sort.Slice(matches, func(i, j int) bool {
+		return matches[i].start < matches[j].start
+	})
+
+	var segs []model.TitleSegment
+	cursor := 0
+	for _, m := range matches {
+		if m.start < cursor {
+			continue
+		}
+		if m.start > cursor {
+			segs = append(segs, model.TitleSegment{Text: title[cursor:m.start]})
+		}
+		segs = append(segs, model.TitleSegment{Text: title[m.start:m.end], Color: m.color})
+		cursor = m.end
+	}
+	if cursor < len(title) {
+		segs = append(segs, model.TitleSegment{Text: title[cursor:]})
+	}
+	return segs
+}
+
+func rootPrefix(outputPath string) string {
+	depth := strings.Count(filepath.ToSlash(filepath.Clean(outputPath)), "/")
+	if depth <= 0 {
+		return ""
+	}
+	return strings.Repeat("../", depth)
+}
+
+func tagColorClass(tag string) string {
+	h := fnv.New32a()
+	_, _ = h.Write([]byte(tag))
+	return fmt.Sprintf("tag-c%d", h.Sum32()%5)
+}
+
 func resolvePathSegments(data *model.HomepageData, p PageSpec) []string {
 	if p.PathSegments != nil {
 		return p.PathSegments(data)
@@ -205,11 +422,31 @@ func renderPage(templatePath, outHTML string, ctx PageContext) error {
 			return template.CSS(fmt.Sprintf("width: %s; background: %s;", width, color))
 		},
 		"lower": strings.ToLower,
+		"tagColor": tagColorClass,
+		"isExternal": func(href string) bool {
+			l := strings.ToLower(href)
+			return strings.HasPrefix(l, "http://") || strings.HasPrefix(l, "https://")
+		},
 		"navHref": func(page, href string) string {
 			if page != "home" && strings.HasPrefix(href, "#") {
 				return "index.html" + href
 			}
 			return href
+		},
+		"rel": func(root, href string) string {
+			if root == "" || href == "" {
+				return href
+			}
+			l := strings.ToLower(href)
+			if strings.HasPrefix(l, "http://") ||
+				strings.HasPrefix(l, "https://") ||
+				strings.HasPrefix(l, "mailto:") ||
+				strings.HasPrefix(l, "tel:") ||
+				strings.HasPrefix(href, "//") ||
+				strings.HasPrefix(href, "#") {
+				return href
+			}
+			return root + href
 		},
 	}
 
@@ -222,6 +459,10 @@ func renderPage(templatePath, outHTML string, ctx PageContext) error {
 	tmpl, err := template.New(filepath.Base(templatePath)).Funcs(funcs).ParseFiles(files...)
 	if err != nil {
 		return fmt.Errorf("parsing template %s: %w", templatePath, err)
+	}
+
+	if err := os.MkdirAll(filepath.Dir(outHTML), 0o755); err != nil {
+		return fmt.Errorf("creating parent dir for %s: %w", outHTML, err)
 	}
 
 	f, err := os.Create(outHTML)

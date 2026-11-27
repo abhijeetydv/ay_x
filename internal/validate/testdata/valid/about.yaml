@@ -2,7 +2,6 @@ connect:
   title: "Connect"
   description: "Say hello."
   cta_label: "Email"
-  cta_href: "mailto:test@example.com"
 
 location:
   title: "Location"
@@ -14,14 +13,6 @@ location:
 
 placeholder_tile:
   enabled: false
-
-posts:
-  title: "Posts"
-  external_href: "#"
-  items:
-    - title: "First Post"
-      href: "#"
-      date: "Jan 1, 2026"
 
 github_card:
   title: "GitHub"

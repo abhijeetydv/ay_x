@@ -22,3 +22,16 @@ footer_links:
   - platform: "instagram"
     label: "Instagram"
     url: "https://instagram.com"
+
+dock:
+  aria_label: "Social links"
+  bubble_title: "Let's connect"
+  email:
+    label: "Email"
+    address: "abhijeet@example.com"
+  items:
+    - "email"
+    - "github"
+    - "linkedin"
+    - "x"
+    - "instagram"

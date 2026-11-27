@@ -7,15 +7,48 @@
     <nav class="sticky-nav">
         <div class="navbar container-wide">
             <div class="nav-left">
-                <a href="{{if .Site.Nav.LogoHref}}{{.Site.Nav.LogoHref}}{{else}}index.html{{end}}" class="nav-logo">{{.LogoText}}</a>
+                <a href="{{if .Site.Nav.LogoHref}}{{rel .Root .Site.Nav.LogoHref}}{{else}}{{rel .Root "index.html"}}{{end}}" class="nav-logo">{{.LogoText}}</a>
                 <span class="nav-cursor">▌</span>
             </div>
             <div class="nav-right">
                 {{$page := .Page}}
+                {{$root := .Root}}
+                {{$newTabLabel := .Site.Nav.NewTabLabel}}
                 {{range .Site.Nav.Links}}
-                <a href="{{navHref $page .Href}}" class="nav-link{{if and .Page (eq .Page $page)}} active{{end}}"{{if and .Page (eq .Page $page)}} aria-current="page"{{end}}>{{.Label}}</a>
+                <a href="{{rel $root (navHref $page .Href)}}" class="nav-link{{if and .Page (eq .Page $page)}} active{{end}}"{{if and .Page (eq .Page $page)}} aria-current="page"{{end}}{{if .NewTab}} target="_blank" rel="noopener noreferrer"{{end}}>{{.Label}}{{if and .NewTab $newTabLabel}}<span class="sr-only"> ({{$newTabLabel}})</span>{{end}}</a>
                 {{end}}
             </div>
+            <button type="button" class="nav-toggle" aria-expanded="false" aria-controls="nav-panel" aria-label="{{.Site.Nav.MenuOpenLabel}}">
+                <span class="nav-toggle-bar" aria-hidden="true"></span>
+                <span class="nav-toggle-bar" aria-hidden="true"></span>
+                <span class="nav-toggle-bar" aria-hidden="true"></span>
+            </button>
         </div>
     </nav>
+
+    <div class="nav-panel-backdrop" id="nav-panel-backdrop" hidden></div>
+    <aside class="nav-panel" id="nav-panel" role="dialog" aria-modal="true" aria-label="{{.Site.Nav.PanelAriaLabel}}" hidden>
+        <div class="nav-panel-header">
+            <button type="button" class="nav-panel-close" aria-label="{{.Site.Nav.MenuCloseLabel}}">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <nav class="nav-panel-links" aria-label="{{.Site.Nav.PanelAriaLabel}}">
+            {{$page := .Page}}
+            {{$root := .Root}}
+            {{$newTabLabel := .Site.Nav.NewTabLabel}}
+            {{range .Site.Nav.Links}}
+            <a href="{{rel $root (navHref $page .Href)}}" class="nav-panel-link{{if and .Page (eq .Page $page)}} active{{end}}"{{if and .Page (eq .Page $page)}} aria-current="page"{{end}}{{if .NewTab}} target="_blank" rel="noopener noreferrer"{{end}}>{{.Label}}{{if and .NewTab $newTabLabel}}<span class="sr-only"> ({{$newTabLabel}})</span>{{end}}</a>
+            {{end}}
+        </nav>
+        {{if .DockItems}}
+        <div class="nav-panel-socials" aria-label="{{.Social.Dock.AriaLabel}}">
+            {{range .DockItems}}
+            <a href="{{.Href}}"{{if .IsExternal}} target="_blank" rel="noopener noreferrer"{{end}} class="nav-panel-social" aria-label="{{.Label}}">
+                {{template "social_icon_18" .Platform}}
+            </a>
+            {{end}}
+        </div>
+        {{end}}
+    </aside>
 {{end}}
