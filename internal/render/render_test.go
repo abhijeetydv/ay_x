@@ -53,8 +53,8 @@ func TestBuildSite(t *testing.T) {
 		"posts.html":    postsMarker,
 		"contact.html":  contactMarker,
 	}
-	for _, page := range render.DefaultPages() {
-		raw, err := os.ReadFile(filepath.Join(outDir, page.Output))
+	for _, page := range render.SitePages(data) {
+		raw, err := os.ReadFile(filepath.Join(outDir, filepath.FromSlash(page.Output)))
 		if err != nil {
 			t.Fatalf("reading generated %s: %v", page.Output, err)
 		}
@@ -226,8 +226,8 @@ func TestMetadataAndSitemap(t *testing.T) {
 	twCardRe := regexp.MustCompile(`<meta name="twitter:card" content="summary_large_image">`)
 	faviconRe := regexp.MustCompile(`<link rel="icon"[^>]*href="([^"]+)"`)
 
-	for _, page := range render.DefaultPages() {
-		raw, err := os.ReadFile(filepath.Join(outDir, page.Output))
+	for _, page := range render.SitePages(data) {
+		raw, err := os.ReadFile(filepath.Join(outDir, filepath.FromSlash(page.Output)))
 		if err != nil {
 			t.Fatalf("reading %s: %v", page.Output, err)
 		}
@@ -242,10 +242,17 @@ func TestMetadataAndSitemap(t *testing.T) {
 		canonMatches := canonRe.FindAllStringSubmatch(html, -1)
 		if len(canonMatches) != 1 {
 			t.Errorf("%s: expected 1 canonical link, got %d", page.Output, len(canonMatches))
-		} else if !strings.HasPrefix(canonMatches[0][1], data.Site.URL) {
-			t.Errorf("%s: canonical %q does not start with %q", page.Output, canonMatches[0][1], data.Site.URL)
+		} else if wantCanon := data.Site.URL + page.CanonicalPath; canonMatches[0][1] != wantCanon {
+			t.Errorf("%s: canonical = %q, want %q", page.Output, canonMatches[0][1], wantCanon)
 		}
 
+		wantOGType := "website"
+		if page.OGType != "" {
+			wantOGType = page.OGType
+		}
+		if !strings.Contains(html, `<meta property="og:type" content="`+wantOGType+`">`) {
+			t.Errorf("%s: missing og:type=%q", page.Output, wantOGType)
+		}
 		if !ogTitleRe.MatchString(html) {
 			t.Errorf("%s: missing og:title", page.Output)
 		}
@@ -264,8 +271,11 @@ func TestMetadataAndSitemap(t *testing.T) {
 		favMatch := faviconRe.FindStringSubmatch(html)
 		if favMatch == nil {
 			t.Errorf("%s: missing favicon link", page.Output)
-		} else if _, err := os.Stat(filepath.Join(outDir, filepath.FromSlash(favMatch[1]))); err != nil {
-			t.Errorf("%s: favicon file %q missing in output: %v", page.Output, favMatch[1], err)
+		} else {
+			favResolved := filepath.Join(outDir, filepath.Dir(filepath.FromSlash(page.Output)), filepath.FromSlash(favMatch[1]))
+			if _, err := os.Stat(favResolved); err != nil {
+				t.Errorf("%s: favicon file %q missing at %s: %v", page.Output, favMatch[1], favResolved, err)
+			}
 		}
 	}
 
@@ -285,7 +295,7 @@ func TestMetadataAndSitemap(t *testing.T) {
 	for _, u := range parsed.URLs {
 		gotLocs[u.Loc] = true
 	}
-	for _, page := range render.DefaultPages() {
+	for _, page := range render.SitePages(data) {
 		want := data.Site.URL + page.CanonicalPath
 		if !gotLocs[want] {
 			t.Errorf("sitemap.xml missing %q", want)
@@ -319,8 +329,8 @@ func TestHeaderLogoPaths(t *testing.T) {
 	}
 
 	logoRe := regexp.MustCompile(`<a href="([^"]+)" class="nav-logo">([^<]+)</a>`)
-	for _, page := range render.DefaultPages() {
-		raw, err := os.ReadFile(filepath.Join(outDir, page.Output))
+	for _, page := range render.SitePages(data) {
+		raw, err := os.ReadFile(filepath.Join(outDir, filepath.FromSlash(page.Output)))
 		if err != nil {
 			t.Fatalf("reading %s: %v", page.Output, err)
 		}
@@ -328,10 +338,15 @@ func TestHeaderLogoPaths(t *testing.T) {
 		if m == nil {
 			t.Fatalf("%s: nav-logo link not found", page.Output)
 		}
-		if m[1] != data.Site.Nav.LogoHref {
-			t.Errorf("%s: logo href = %q, want %q", page.Output, m[1], data.Site.Nav.LogoHref)
-		}
+		wantHref := data.Site.Nav.LogoHref
 		wantLogo := data.Site.Nav.Logo + data.Site.Nav.PagePaths[page.Key]
+		if page.Post != nil {
+			wantHref = "../../" + wantHref
+			wantLogo = data.Site.Nav.Logo + "posts/" + page.Post.Slug
+		}
+		if m[1] != wantHref {
+			t.Errorf("%s: logo href = %q, want %q", page.Output, m[1], wantHref)
+		}
 		if m[2] != wantLogo {
 			t.Errorf("%s: logo text = %q, want %q", page.Output, m[2], wantLogo)
 		}
@@ -504,5 +519,92 @@ func TestContactMailtoHref(t *testing.T) {
 	wantHref := `href="mailto:` + data.Contact.Email.Address + `"`
 	if !strings.Contains(string(raw), wantHref) {
 		t.Errorf("contact.html missing %s", wantHref)
+	}
+}
+
+func TestPostPagesEndToEnd(t *testing.T) {
+	data, err := loader.LoadAll(filepath.Join("..", "validate", "testdata", "valid"))
+	if err != nil {
+		t.Fatalf("LoadAll fixture failed: %v", err)
+	}
+	// Inject a raw <script> tag into one fixture post body to verify end-to-end neutralisation.
+	for i := range data.SortedPosts {
+		if data.SortedPosts[i].Slug == "older-fixture-post" {
+			data.SortedPosts[i].RawBody += "\n\n<script>alert(1)</script>\n"
+		}
+	}
+	if err := validate.Homepage(data); err != nil {
+		t.Fatalf("validate.Homepage failed: %v", err)
+	}
+
+	outDir := t.TempDir()
+	templateDir := filepath.Join("..", "..", "templates")
+	rootDir := filepath.Join("..", "..")
+	if err := render.BuildSite(templateDir, rootDir, outDir, data); err != nil {
+		t.Fatalf("BuildSite failed: %v", err)
+	}
+
+	newestRaw, err := os.ReadFile(filepath.Join(outDir, "posts", "newest-fixture-post", "index.html"))
+	if err != nil {
+		t.Fatalf("reading newest-fixture-post/index.html: %v", err)
+	}
+	newestHTML := string(newestRaw)
+
+	// Styled title parts in order
+	wantH1 := `<h1 class="post-title-display"><span class="title-part title-dim">Newest</span> <span class="title-part title-strong title-blue">Fixture</span> <span class="title-part title-serif">Post</span></h1>`
+	if !strings.Contains(newestHTML, wantH1) {
+		t.Errorf("newest-fixture-post missing expected styled h1:\nwant: %s", wantH1)
+	}
+
+	// Code-block wrapper and YAML copy labels
+	if !strings.Contains(newestHTML, `<div class="code-block">`) ||
+		!strings.Contains(newestHTML, `data-copy-label="`+data.Posts.PostPage.CopyLabel+`"`) ||
+		!strings.Contains(newestHTML, `data-copied-label="`+data.Posts.PostPage.CopiedLabel+`"`) {
+		t.Errorf("newest-fixture-post missing code-block wrapper or copy button labels")
+	}
+
+	// Depth-aware ../../ asset prefixes
+	for _, wantRef := range []string{`href="../../styles.css"`, `src="../../script.js"`} {
+		if !strings.Contains(newestHTML, wantRef) {
+			t.Errorf("newest-fixture-post missing %s", wantRef)
+		}
+	}
+
+	// Tag palette consistency between posts.html and post page
+	postsListRaw, err := os.ReadFile(filepath.Join(outDir, "posts.html"))
+	if err != nil {
+		t.Fatalf("reading posts.html: %v", err)
+	}
+	postsListHTML := string(postsListRaw)
+	tagRe := regexp.MustCompile(`<span class="tag (tag-c[0-4])">([^<]+)</span>`)
+	listTags := map[string]string{}
+	for _, m := range tagRe.FindAllStringSubmatch(postsListHTML, -1) {
+		listTags[m[2]] = m[1]
+	}
+	for _, m := range tagRe.FindAllStringSubmatch(newestHTML, -1) {
+		if wantCls, ok := listTags[m[2]]; ok && m[1] != wantCls {
+			t.Errorf("tag %q color mismatch: list=%s post=%s", m[2], wantCls, m[1])
+		}
+	}
+
+	// Links from posts.html and home tile to post pages
+	if !strings.Contains(postsListHTML, `href="posts/newest-fixture-post/"`) {
+		t.Errorf("posts.html missing link to posts/newest-fixture-post/")
+	}
+	homeRaw, err := os.ReadFile(filepath.Join(outDir, "index.html"))
+	if err != nil {
+		t.Fatalf("reading index.html: %v", err)
+	}
+	if !strings.Contains(string(homeRaw), `<a href="posts/newest-fixture-post/" class="post-item">`) {
+		t.Errorf("index.html latest-post tile does not link to posts/newest-fixture-post/")
+	}
+
+	// Raw <script> neutralised end-to-end
+	olderRaw, err := os.ReadFile(filepath.Join(outDir, "posts", "older-fixture-post", "index.html"))
+	if err != nil {
+		t.Fatalf("reading older-fixture-post/index.html: %v", err)
+	}
+	if strings.Contains(string(olderRaw), "<script>alert(1)</script>") {
+		t.Fatalf("older-fixture-post/index.html leaked raw <script> tag")
 	}
 }

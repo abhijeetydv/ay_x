@@ -140,3 +140,55 @@ func TestAllowedTitleStylesExistInCSS(t *testing.T) {
 		}
 	}
 }
+
+func TestBadPostSlugRejected(t *testing.T) {
+	data, err := loader.LoadAll("testdata/valid")
+	if err != nil {
+		t.Fatalf("LoadAll failed: %v", err)
+	}
+	data.SortedPosts[0].Slug = "Bad_Slug"
+	if err := validate.Homepage(data); err == nil {
+		t.Fatal("expected validation error for bad post slug, got nil")
+	}
+}
+
+func TestTitlePartsMismatchRejected(t *testing.T) {
+	data, err := loader.LoadAll("testdata/valid")
+	if err != nil {
+		t.Fatalf("LoadAll failed: %v", err)
+	}
+	for i := range data.SortedPosts {
+		if len(data.SortedPosts[i].TitleParts) > 0 {
+			data.SortedPosts[i].TitleParts[0].Text = "Wrong"
+		}
+	}
+	if err := validate.Homepage(data); err == nil {
+		t.Fatal("expected validation error for title_parts mismatch, got nil")
+	}
+}
+
+func TestUnknownTitleStyleRejected(t *testing.T) {
+	data, err := loader.LoadAll("testdata/valid")
+	if err != nil {
+		t.Fatalf("LoadAll failed: %v", err)
+	}
+	for i := range data.SortedPosts {
+		if len(data.SortedPosts[i].TitleParts) > 0 {
+			data.SortedPosts[i].TitleParts[0].Styles = []string{"nonexistent"}
+		}
+	}
+	if err := validate.Homepage(data); err == nil {
+		t.Fatal("expected validation error for unknown title style, got nil")
+	}
+}
+
+func TestLongPostSummaryRejected(t *testing.T) {
+	data, err := loader.LoadAll("testdata/valid")
+	if err != nil {
+		t.Fatalf("LoadAll failed: %v", err)
+	}
+	data.SortedPosts[0].Summary = strings.Repeat("a", 201)
+	if err := validate.Homepage(data); err == nil {
+		t.Fatal("expected validation error for summary > 200 chars, got nil")
+	}
+}
