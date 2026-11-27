@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initNavHighlight();
     initCareerTabs();
     initCodeCopy();
+    initTocHighlight();
     initGitHubData();
 });
 
@@ -121,9 +122,12 @@ function initSmoothScroll() {
             if (target && scrollContainer) {
                 e.preventDefault();
                 const offsetTop = target.offsetTop - scrollContainer.offsetTop;
+                const reduced = typeof window !== 'undefined' &&
+                    typeof window.matchMedia === 'function' &&
+                    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
                 scrollContainer.scrollTo({
                     top: offsetTop,
-                    behavior: 'smooth'
+                    behavior: reduced ? 'auto' : 'smooth'
                 });
             }
         });
@@ -518,4 +522,81 @@ function initCodeCopy() {
         if (!btn) return;
         void handleCodeCopyClick(btn);
     });
+}
+
+// --- Post TOC Active Section Highlight ---
+function selectActiveHeadingId(headings, offsetTop) {
+    if (!Array.isArray(headings) || headings.length === 0) return null;
+    let activeId = headings[0].id;
+    for (const h of headings) {
+        if (h.top <= offsetTop) {
+            activeId = h.id;
+        } else {
+            break;
+        }
+    }
+    return activeId;
+}
+
+function initTocHighlight() {
+    const toc = document.querySelector('.toc');
+    if (!toc || typeof IntersectionObserver !== 'function') return;
+
+    const links = Array.from(toc.querySelectorAll('.toc-link[href^="#"]'));
+    if (links.length === 0) return;
+
+    const entries = [];
+    for (const link of links) {
+        const id = link.getAttribute('href').slice(1);
+        const target = id ? document.getElementById(id) : null;
+        if (target) {
+            entries.push({ id, link, target });
+        }
+    }
+    if (entries.length === 0) return;
+
+    const scrollContainer = document.querySelector('.scroll-fade-wrapper');
+
+    function setActive(activeId) {
+        for (const entry of entries) {
+            const isActive = entry.id === activeId;
+            entry.link.classList.toggle('active', isActive);
+            if (isActive) {
+                entry.link.setAttribute('aria-current', 'location');
+            } else {
+                entry.link.removeAttribute('aria-current');
+            }
+        }
+    }
+
+    function updateFromPositions() {
+        const containerRect = scrollContainer
+            ? scrollContainer.getBoundingClientRect()
+            : { top: 0, height: window.innerHeight || 800 };
+        const offsetTop = containerRect.top + Math.min(180, containerRect.height * 0.25);
+        const positions = entries.map((e) => ({
+            id: e.id,
+            top: e.target.getBoundingClientRect().top,
+        }));
+        const activeId = selectActiveHeadingId(positions, offsetTop);
+        if (activeId) {
+            setActive(activeId);
+        }
+    }
+
+    const observer = new IntersectionObserver(
+        () => {
+            updateFromPositions();
+        },
+        {
+            root: scrollContainer || null,
+            rootMargin: '-20% 0px -70% 0px',
+            threshold: [0, 1],
+        }
+    );
+
+    for (const entry of entries) {
+        observer.observe(entry.target);
+    }
+    updateFromPositions();
 }
