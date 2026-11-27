@@ -25,53 +25,20 @@ type CopyLabels struct {
 	Copied string
 }
 
-// TitlePart represents a styled segment in a post's front matter title_parts.
-type TitlePart struct {
-	Text  string
-	Style StyleList `yaml:"style"`
+// TitleColor represents a coloured substring entry in a post's front matter title_colors.
+type TitleColor struct {
+	Text  string `yaml:"text"`
+	Color string `yaml:"color"`
 }
 
 // FrontMatter represents the strict YAML front matter of a Markdown post.
 type FrontMatter struct {
-	Title      string       `yaml:"title"`
-	TitleParts []RawTitlePart `yaml:"title_parts,omitempty"`
-	Date       string       `yaml:"date"`
-	Updated    string       `yaml:"updated,omitempty"`
-	Summary    string       `yaml:"summary"`
-	Tags       []string     `yaml:"tags,omitempty"`
-}
-
-// RawTitlePart represents a single styled part in post front matter.
-type RawTitlePart struct {
-	Text  string    `yaml:"text"`
-	Style StyleList `yaml:"style"`
-}
-
-// StyleList decodes either a single YAML string or a YAML list of strings.
-type StyleList []string
-
-// UnmarshalYAML implements yaml.Unmarshaler so `style` accepts a string or []string.
-func (s *StyleList) UnmarshalYAML(value *yaml.Node) error {
-	switch value.Kind {
-	case yaml.ScalarNode:
-		var single string
-		if err := value.Decode(&single); err != nil {
-			return err
-		}
-		if single != "" {
-			*s = []string{single}
-		}
-		return nil
-	case yaml.SequenceNode:
-		var list []string
-		if err := value.Decode(&list); err != nil {
-			return err
-		}
-		*s = list
-		return nil
-	default:
-		return fmt.Errorf("style must be a string or list of strings")
-	}
+	Title       string       `yaml:"title"`
+	TitleColors []TitleColor `yaml:"title_colors,omitempty"`
+	Date        string       `yaml:"date"`
+	Updated     string       `yaml:"updated,omitempty"`
+	Summary     string       `yaml:"summary"`
+	Tags        []string     `yaml:"tags,omitempty"`
 }
 
 // PostFile holds the parsed front matter, slug, and raw Markdown body of a post.

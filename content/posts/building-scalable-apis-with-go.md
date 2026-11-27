@@ -1,16 +1,12 @@
 ---
+# Available title colours: red, orange, yellow, green, cyan, blue, purple, pink, white, gray
+# Example: title_colors: [{ text: "Go", color: "blue" }]
 title: "Building Scalable APIs with Go"
-title_parts:
-  - text: "Building"
-    style: "dim"
-  - text: "Scalable APIs"
-    style: ["strong", "big"]
-  - text: "with"
-    style: "serif"
-  # - text: "Building Scalable APIs with"
-  #   style: "plain"
+title_colors:
+  - text: "Scalable"
+    color: "cyan"
   - text: "Go"
-    style: "blue"
+    color: "blue"
 date: "2026-11-20"
 updated: "2026-11-25"
 summary: "Structuring HTTP services, graceful shutdown, and middleware in Go."

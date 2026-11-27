@@ -35,6 +35,19 @@
     --width-post-body: 860px;
     --width-post-title: 1040px;
     --page-fade-duration: 400ms;
+
+    /* Post title colours — keep in sync with model.AllowedTitleColors (a test enforces this):
+       red, orange, yellow, green, cyan, blue, purple, pink, white, gray */
+    --color-red: #f38ba8;
+    --color-orange: #fab387;
+    --color-yellow: #f9e2af;
+    --color-green: #a6e3a1;
+    --color-cyan: #94e2d5;
+    --color-blue: #89b4fa;
+    --color-purple: #cba6f7;
+    --color-pink: #f5c2e7;
+    --color-white: #f5f5f5;
+    --color-gray: #8a8a8a;
 }
 
 /* --- Reset & Base --- */
@@ -608,45 +621,17 @@ a {
     color: var(--text-muted);
 }
 
-/* --- Post Title Styles (Allowlist) --- */
-.title-plain {
-    font-weight: 600;
-    color: var(--text-primary);
-}
-
-.title-dim {
-    font-weight: 400;
-    color: var(--text-muted);
-}
-
-.title-strong {
-    font-weight: 800;
-    color: var(--accent);
-}
-
-.title-warm {
-    color: var(--peach);
-}
-
-.title-violet {
-    color: var(--mauve);
-}
-
-.title-blue {
-    color: var(--blue);
-}
-
-.title-serif {
-    font-family: 'Cormorant', Georgia, serif;
-    font-style: italic;
-    font-weight: 600;
-    text-transform: none;
-    letter-spacing: 0;
-}
-
-.title-big {
-    font-size: 1.15em;
-}
+/* --- Post Title Colours (Allowlist) --- */
+.title-red { color: var(--color-red); }
+.title-orange { color: var(--color-orange); }
+.title-yellow { color: var(--color-yellow); }
+.title-green { color: var(--color-green); }
+.title-cyan { color: var(--color-cyan); }
+.title-blue { color: var(--color-blue); }
+.title-purple { color: var(--color-purple); }
+.title-pink { color: var(--color-pink); }
+.title-white { color: var(--color-white); }
+.title-gray { color: var(--color-gray); }
 
 /* --- Tag Palette --- */
 .tag-c0 {

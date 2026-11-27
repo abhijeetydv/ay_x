@@ -1,12 +1,10 @@
 ---
 title: "Newest Fixture Post"
-title_parts:
+title_colors:
   - text: "Newest"
-    style: "dim"
-  - text: "Fixture"
-    style: ["strong", "blue"]
+    color: "cyan"
   - text: "Post"
-    style: "serif"
+    color: "blue"
 date: "2026-02-15"
 updated: "2026-02-20"
 summary: "Newer fixture summary."

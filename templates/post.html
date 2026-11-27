@@ -9,7 +9,7 @@
             <article class="post-article">
                 <header class="post-header">
                     <a href="{{rel .Root .Posts.PostPage.BackHref}}" class="back-link">{{.Posts.PostPage.BackLabel}}</a>
-                    <h1 class="post-title-display">{{if .Post.TitleParts}}{{range $i, $p := .Post.TitleParts}}{{if $i}} {{end}}<span class="title-part{{range $p.Styles}} title-{{.}}{{end}}">{{$p.Text}}</span>{{end}}{{else}}<span class="title-part title-plain">{{.Post.Title}}</span>{{end}}</h1>
+                    <h1 class="post-title-display">{{if .Post.TitleSegments}}{{range .Post.TitleSegments}}{{if .Color}}<span class="title-color title-{{.Color}}">{{.Text}}</span>{{else}}{{.Text}}{{end}}{{end}}{{else}}{{.Post.Title}}{{end}}</h1>
                     <div class="post-meta">
                         <time datetime="{{.Post.Date}}">{{.Post.FormattedDate}}</time>
                         {{if .Post.Updated}}

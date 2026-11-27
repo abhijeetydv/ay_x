@@ -399,9 +399,12 @@ func validatePosts(p *model.PostsConfig, postItems []model.Post, errs *[]string)
 		*errs = append(*errs, "posts.yaml: post_page.copied_label is required")
 	}
 
-	allowedStyles := make(map[string]bool, len(model.AllowedTitleStyles))
-	for _, st := range model.AllowedTitleStyles {
-		allowedStyles[st] = true
+	allowedColors := make(map[string]bool, len(model.AllowedTitleColors))
+	sortedAllowed := make([]string, len(model.AllowedTitleColors))
+	copy(sortedAllowed, model.AllowedTitleColors)
+	sort.Strings(sortedAllowed)
+	for _, c := range model.AllowedTitleColors {
+		allowedColors[c] = true
 	}
 
 	seenSlugs := map[string]bool{}
@@ -436,33 +439,38 @@ func validatePosts(p *model.PostsConfig, postItems []model.Post, errs *[]string)
 			}
 		}
 
-		if len(item.TitleParts) > 0 {
-			joinedParts := make([]string, 0, len(item.TitleParts))
-			for j, part := range item.TitleParts {
-				if strings.TrimSpace(part.Text) == "" {
-					*errs = append(*errs, fmt.Sprintf("%s: title_parts[%d].text is required", loc, j))
+		if len(item.TitleColors) > 0 {
+			type span struct {
+				start int
+				end   int
+				idx   int
+			}
+			var spans []span
+			for j, tc := range item.TitleColors {
+				if !allowedColors[tc.Color] {
+					*errs = append(*errs, fmt.Sprintf("%s: title_colors[%d].color %q is not allowed (allowed: %s)", loc, j, tc.Color, strings.Join(sortedAllowed, ", ")))
 				}
-				joinedParts = append(joinedParts, normalizeWhitespace(part.Text))
-				if len(part.Styles) == 0 {
-					*errs = append(*errs, fmt.Sprintf("%s: title_parts[%d].style is required", loc, j))
+				if tc.Text == "" {
+					*errs = append(*errs, fmt.Sprintf("%s: title_colors[%d].text must not be empty", loc, j))
+					continue
 				}
-				for _, st := range part.Styles {
-					if !allowedStyles[st] {
-						*errs = append(*errs, fmt.Sprintf("%s: title_parts[%d].style %q is not in allowlist", loc, j, st))
+				// If text appears more than once in title, the FIRST occurrence is coloured.
+				idx := strings.Index(item.Title, tc.Text)
+				if idx == -1 {
+					*errs = append(*errs, fmt.Sprintf("%s: title_colors[%d].text %q was not found in title %q (exact, case-sensitive)", loc, j, tc.Text, item.Title))
+					continue
+				}
+				start, end := idx, idx+len(tc.Text)
+				for _, prev := range spans {
+					if start < prev.end && prev.start < end {
+						*errs = append(*errs, fmt.Sprintf("%s: title_colors[%d] (%q) overlaps with title_colors[%d]", loc, j, tc.Text, prev.idx))
+						break
 					}
 				}
-			}
-			normTitle := normalizeWhitespace(item.Title)
-			normJoined := normalizeWhitespace(strings.Join(joinedParts, " "))
-			if normJoined != normTitle {
-				*errs = append(*errs, fmt.Sprintf("%s: title_parts joined (%q) does not match title (%q)", loc, normJoined, normTitle))
+				spans = append(spans, span{start: start, end: end, idx: j})
 			}
 		}
 	}
-}
-
-func normalizeWhitespace(s string) string {
-	return strings.Join(strings.Fields(s), " ")
 }
 
 func validateContact(c *model.ContactConfig, errs *[]string) {

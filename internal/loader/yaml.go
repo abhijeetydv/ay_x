@@ -45,24 +45,24 @@ func LoadAll(contentDir string) (*model.HomepageData, error) {
 	}
 	data.SortedPosts = make([]model.Post, 0, len(postFiles))
 	for _, pf := range postFiles {
-		parts := make([]model.TitlePart, 0, len(pf.FrontMatter.TitleParts))
-		for _, tp := range pf.FrontMatter.TitleParts {
-			parts = append(parts, model.TitlePart{
-				Text:   tp.Text,
-				Styles: []string(tp.Style),
+		colors := make([]model.TitleColor, 0, len(pf.FrontMatter.TitleColors))
+		for _, tc := range pf.FrontMatter.TitleColors {
+			colors = append(colors, model.TitleColor{
+				Text:  tc.Text,
+				Color: tc.Color,
 			})
 		}
 		data.SortedPosts = append(data.SortedPosts, model.Post{
-			Slug:       pf.Slug,
-			SourcePath: pf.SourcePath,
-			Title:      pf.FrontMatter.Title,
-			TitleParts: parts,
-			Date:       pf.FrontMatter.Date,
-			Updated:    pf.FrontMatter.Updated,
-			Summary:    pf.FrontMatter.Summary,
-			Tags:       pf.FrontMatter.Tags,
-			RawBody:    pf.Body,
-			URL:        "posts/" + pf.Slug + "/",
+			Slug:        pf.Slug,
+			SourcePath:  pf.SourcePath,
+			Title:       pf.FrontMatter.Title,
+			TitleColors: colors,
+			Date:        pf.FrontMatter.Date,
+			Updated:     pf.FrontMatter.Updated,
+			Summary:     pf.FrontMatter.Summary,
+			Tags:        pf.FrontMatter.Tags,
+			RawBody:     pf.Body,
+			URL:         "posts/" + pf.Slug + "/",
 		})
 	}
 

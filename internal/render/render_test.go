@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"portfolio/internal/loader"
+	"portfolio/internal/model"
 	"portfolio/internal/render"
 	"portfolio/internal/validate"
 )
@@ -550,10 +551,26 @@ func TestPostPagesEndToEnd(t *testing.T) {
 	}
 	newestHTML := string(newestRaw)
 
-	// Styled title parts in order
-	wantH1 := `<h1 class="post-title-display"><span class="title-part title-dim">Newest</span> <span class="title-part title-strong title-blue">Fixture</span> <span class="title-part title-serif">Post</span></h1>`
+	// Coloured title spans in order
+	wantH1 := `<h1 class="post-title-display"><span class="title-color title-cyan">Newest</span> Fixture <span class="title-color title-blue">Post</span></h1>`
 	if !strings.Contains(newestHTML, wantH1) {
-		t.Errorf("newest-fixture-post missing expected styled h1:\nwant: %s", wantH1)
+		t.Errorf("newest-fixture-post missing expected coloured h1:\nwant: %s", wantH1)
+	}
+
+	// Special characters in title are HTML-escaped
+	data.SortedPosts[0].Title = `Go & "Quotes" <Safe>`
+	data.SortedPosts[0].TitleColors = []model.TitleColor{{Text: "Go", Color: "blue"}}
+	escOutDir := t.TempDir()
+	if err := render.BuildSite(templateDir, rootDir, escOutDir, data); err != nil {
+		t.Fatalf("BuildSite escaped title failed: %v", err)
+	}
+	escRaw, err := os.ReadFile(filepath.Join(escOutDir, "posts", data.SortedPosts[0].Slug, "index.html"))
+	if err != nil {
+		t.Fatalf("reading escaped post: %v", err)
+	}
+	wantEscH1 := `<span class="title-color title-blue">Go</span> &amp; &#34;Quotes&#34; &lt;Safe&gt;`
+	if !strings.Contains(string(escRaw), wantEscH1) {
+		t.Errorf("escaped title h1 mismatch, want %q", wantEscH1)
 	}
 
 	// Code-block wrapper and YAML copy labels

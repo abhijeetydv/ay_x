@@ -3,11 +3,13 @@ package validate_test
 import (
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
 	"portfolio/internal/loader"
 	"portfolio/internal/model"
+	"portfolio/internal/posts"
 	"portfolio/internal/validate"
 )
 
@@ -127,16 +129,32 @@ func TestInvalidContactEmailRejected(t *testing.T) {
 	}
 }
 
-func TestAllowedTitleStylesExistInCSS(t *testing.T) {
+func TestAllowedTitleColorsMatchCSS(t *testing.T) {
 	raw, err := os.ReadFile(filepath.Join("..", "..", "styles.css"))
 	if err != nil {
 		t.Fatalf("reading styles.css: %v", err)
 	}
 	css := string(raw)
-	for _, st := range model.AllowedTitleStyles {
-		cls := ".title-" + st
-		if !strings.Contains(css, cls) {
-			t.Errorf("styles.css missing CSS class %s for allowlisted title style %q", cls, st)
+
+	allowed := make(map[string]bool, len(model.AllowedTitleColors))
+	for _, c := range model.AllowedTitleColors {
+		allowed[c] = true
+		if !strings.Contains(css, ".title-"+c) {
+			t.Errorf("styles.css missing CSS class .title-%s for allowlisted colour %q", c, c)
+		}
+		if !strings.Contains(css, "--color-"+c+":") {
+			t.Errorf("styles.css missing CSS variable --color-%s for allowlisted colour %q", c, c)
+		}
+	}
+
+	titleClassRe := regexp.MustCompile(`\.title-([a-z0-9-]+)`)
+	for _, m := range titleClassRe.FindAllStringSubmatch(css, -1) {
+		name := m[1]
+		if name == "color" {
+			continue
+		}
+		if !allowed[name] {
+			t.Errorf("styles.css contains unallowed .title-%s class", name)
 		}
 	}
 }
@@ -152,33 +170,63 @@ func TestBadPostSlugRejected(t *testing.T) {
 	}
 }
 
-func TestTitlePartsMismatchRejected(t *testing.T) {
+func TestTitleColorNotInTitleRejected(t *testing.T) {
 	data, err := loader.LoadAll("testdata/valid")
 	if err != nil {
 		t.Fatalf("LoadAll failed: %v", err)
 	}
-	for i := range data.SortedPosts {
-		if len(data.SortedPosts[i].TitleParts) > 0 {
-			data.SortedPosts[i].TitleParts[0].Text = "Wrong"
-		}
-	}
+	data.SortedPosts[0].TitleColors = []model.TitleColor{{Text: "MissingWord", Color: "blue"}}
 	if err := validate.Homepage(data); err == nil {
-		t.Fatal("expected validation error for title_parts mismatch, got nil")
+		t.Fatal("expected validation error for title_colors text not in title, got nil")
 	}
 }
 
-func TestUnknownTitleStyleRejected(t *testing.T) {
+func TestTitleColorOverlapRejected(t *testing.T) {
 	data, err := loader.LoadAll("testdata/valid")
 	if err != nil {
 		t.Fatalf("LoadAll failed: %v", err)
 	}
-	for i := range data.SortedPosts {
-		if len(data.SortedPosts[i].TitleParts) > 0 {
-			data.SortedPosts[i].TitleParts[0].Styles = []string{"nonexistent"}
-		}
+	data.SortedPosts[0].Title = "Building Scalable APIs"
+	data.SortedPosts[0].TitleColors = []model.TitleColor{
+		{Text: "Building Scalable", Color: "cyan"},
+		{Text: "Scalable APIs", Color: "blue"},
 	}
 	if err := validate.Homepage(data); err == nil {
-		t.Fatal("expected validation error for unknown title style, got nil")
+		t.Fatal("expected validation error for overlapping title_colors, got nil")
+	}
+}
+
+func TestTitleColorDuplicateTextFirstOccurrenceAllowed(t *testing.T) {
+	data, err := loader.LoadAll("testdata/valid")
+	if err != nil {
+		t.Fatalf("LoadAll failed: %v", err)
+	}
+	data.SortedPosts[0].Title = "Go and Go Again"
+	data.SortedPosts[0].TitleColors = []model.TitleColor{{Text: "Go", Color: "blue"}}
+	if err := validate.Homepage(data); err != nil {
+		t.Fatalf("expected duplicate text first-occurrence rule to succeed, got: %v", err)
+	}
+}
+
+func TestUnknownTitleColorRejected(t *testing.T) {
+	data, err := loader.LoadAll("testdata/valid")
+	if err != nil {
+		t.Fatalf("LoadAll failed: %v", err)
+	}
+	data.SortedPosts[0].TitleColors = []model.TitleColor{{Text: data.SortedPosts[0].Title, Color: "teal"}}
+	err = validate.Homepage(data)
+	if err == nil {
+		t.Fatal("expected validation error for unknown title color, got nil")
+	}
+	if !strings.Contains(err.Error(), "allowed:") || !strings.Contains(err.Error(), "blue") {
+		t.Errorf("expected error listing allowed colours, got: %v", err)
+	}
+}
+
+func TestUnknownTitleColorKeyRejected(t *testing.T) {
+	raw := []byte("---\ntitle: \"Hello\"\ntitle_colors:\n  - text: \"Hello\"\n    color: \"blue\"\n    extra_key: 1\ndate: \"2026-01-01\"\nsummary: \"Sum\"\n---\nBody\n")
+	if _, _, err := posts.SplitFrontMatter(raw); err == nil {
+		t.Fatal("expected error for unknown key inside title_colors entry, got nil")
 	}
 }
 

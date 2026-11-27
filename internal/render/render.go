@@ -268,6 +268,7 @@ func preparePosts(data *model.HomepageData) error {
 		if items[i].URL == "" || items[i].URL == "#" {
 			items[i].URL = "posts/" + items[i].Slug + "/"
 		}
+		items[i].TitleSegments = splitTitleSegments(items[i].Title, items[i].TitleColors)
 	}
 
 	sort.SliceStable(items, func(i, j int) bool {
@@ -290,6 +291,56 @@ func preparePosts(data *model.HomepageData) error {
 		data.LatestPost = nil
 	}
 	return nil
+}
+
+func splitTitleSegments(title string, colors []model.TitleColor) []model.TitleSegment {
+	if len(colors) == 0 {
+		return nil
+	}
+	type match struct {
+		start int
+		end   int
+		color string
+	}
+	var matches []match
+	for _, tc := range colors {
+		if tc.Text == "" {
+			continue
+		}
+		// Always colour the first occurrence in title.
+		idx := strings.Index(title, tc.Text)
+		if idx == -1 {
+			continue
+		}
+		matches = append(matches, match{
+			start: idx,
+			end:   idx + len(tc.Text),
+			color: tc.Color,
+		})
+	}
+	if len(matches) == 0 {
+		return nil
+	}
+	sort.Slice(matches, func(i, j int) bool {
+		return matches[i].start < matches[j].start
+	})
+
+	var segs []model.TitleSegment
+	cursor := 0
+	for _, m := range matches {
+		if m.start < cursor {
+			continue
+		}
+		if m.start > cursor {
+			segs = append(segs, model.TitleSegment{Text: title[cursor:m.start]})
+		}
+		segs = append(segs, model.TitleSegment{Text: title[m.start:m.end], Color: m.color})
+		cursor = m.end
+	}
+	if cursor < len(title) {
+		segs = append(segs, model.TitleSegment{Text: title[cursor:]})
+	}
+	return segs
 }
 
 func rootPrefix(outputPath string) string {

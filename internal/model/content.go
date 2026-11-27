@@ -2,16 +2,23 @@ package model
 
 import "html/template"
 
-// AllowedTitleStyles defines the single source of truth for post title_parts styles.
-var AllowedTitleStyles = []string{
-	"plain",
-	"dim",
-	"strong",
-	"warm",
-	"violet",
+// AllowedTitleColors defines the single source of truth for post title_colors entries:
+// red, orange, yellow, green, cyan, blue, purple, pink, white, gray.
+// To add a new colour:
+//  1. Add its name to AllowedTitleColors here.
+//  2. Add --color-<name> and .title-<name> in styles.css (a test enforces this).
+//  3. Update the example comment in content/posts/*.md if desired.
+var AllowedTitleColors = []string{
+	"red",
+	"orange",
+	"yellow",
+	"green",
+	"cyan",
 	"blue",
-	"serif",
-	"big",
+	"purple",
+	"pink",
+	"white",
+	"gray",
 }
 
 // Link represents a labeled hyperlink.
@@ -207,10 +214,16 @@ type PostPageConfig struct {
 	CopiedLabel  string `yaml:"copied_label"`
 }
 
-// TitlePart represents a styled segment of a post title.
-type TitlePart struct {
-	Text   string
-	Styles []string
+// TitleColor represents a coloured substring rule from post front matter.
+type TitleColor struct {
+	Text  string
+	Color string
+}
+
+// TitleSegment represents an ordered plain or coloured segment of a post title.
+type TitleSegment struct {
+	Text  string
+	Color string
 }
 
 // Post represents a single Markdown blog post loaded from content/posts/*.md.
@@ -218,7 +231,8 @@ type Post struct {
 	Slug             string
 	SourcePath       string
 	Title            string
-	TitleParts       []TitlePart
+	TitleColors      []TitleColor
+	TitleSegments    []TitleSegment
 	Date             string
 	FormattedDate    string
 	Updated          string
