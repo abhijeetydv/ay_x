@@ -13,6 +13,9 @@ nav:
   logo: "~/"
   logo_href: "index.html"
   new_tab_label: "opens in a new tab"
+  menu_open_label: "Open navigation menu"
+  menu_close_label: "Close navigation menu"
+  panel_aria_label: "Mobile navigation"
   page_paths:
     home: ""
     about: "about"

@@ -126,6 +126,15 @@ func validateSite(s *model.SiteConfig, errs *[]string) {
 	if strings.TrimSpace(s.Nav.Logo) == "" {
 		*errs = append(*errs, "site.yaml: nav.logo is required")
 	}
+	if strings.TrimSpace(s.Nav.MenuOpenLabel) == "" {
+		*errs = append(*errs, "site.yaml: nav.menu_open_label is required")
+	}
+	if strings.TrimSpace(s.Nav.MenuCloseLabel) == "" {
+		*errs = append(*errs, "site.yaml: nav.menu_close_label is required")
+	}
+	if strings.TrimSpace(s.Nav.PanelAriaLabel) == "" {
+		*errs = append(*errs, "site.yaml: nav.panel_aria_label is required")
+	}
 	if s.Nav.LogoHref != "" && !isSafeHref(s.Nav.LogoHref) {
 		*errs = append(*errs, fmt.Sprintf("site.yaml: invalid nav.logo_href %q", s.Nav.LogoHref))
 	}

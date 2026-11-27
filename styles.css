@@ -36,6 +36,20 @@
     --width-post-title: 1040px;
     --page-fade-duration: 400ms;
 
+    /* --- Dock & Mobile Panel Tuning Variables ---
+       Breakpoints:
+         - Mobile nav panel: <= 900px (active only under html.js)
+         - Laptop floating dock: >= 1392px width (--width-wide 1280px + 2 * (36px + 20px)) and >= 480px height */
+    --dock-size: 36px;
+    --dock-gap: 8px;
+    --dock-edge: 20px;
+    --dock-fly-duration: 650ms;
+    --dock-stagger: 70ms;
+    --dock-pop-scale: 1.12;
+    --dock-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --panel-width: min(320px, 85vw);
+    --panel-duration: 250ms;
+
     /* Post title colours — keep in sync with model.AllowedTitleColors (a test enforces this):
        red, orange, yellow, green, cyan, blue, purple, pink, white, gray */
     --color-red: #f38ba8;
@@ -243,6 +257,152 @@ a {
 
 .nav-link.active::after {
     width: 100%;
+}
+
+/* --- Mobile Nav Toggle & Side Panel --- */
+.nav-toggle {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.nav-toggle:hover,
+.nav-toggle:focus-visible {
+    border-color: var(--border-light);
+    background: var(--bg-card);
+}
+
+.nav-toggle-bar {
+    width: 18px;
+    height: 1.5px;
+    background: currentColor;
+    border-radius: 1px;
+}
+
+.nav-panel-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    background: rgba(0, 0, 0, 0.65);
+    opacity: 0;
+    transition: opacity var(--panel-duration) ease;
+}
+
+.nav-panel-backdrop.is-open {
+    opacity: 1;
+}
+
+.nav-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 210;
+    width: var(--panel-width);
+    background: var(--bg-surface);
+    border-left: 1px solid var(--border);
+    padding: 20px 24px 28px;
+    display: flex;
+    flex-direction: column;
+    transform: translateX(100%);
+    transition: transform var(--panel-duration) var(--dock-ease);
+}
+
+.nav-panel.is-open {
+    transform: translateX(0);
+}
+
+.nav-panel[hidden],
+.nav-panel-backdrop[hidden] {
+    display: none;
+}
+
+.nav-panel-header {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 24px;
+}
+
+.nav-panel-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.nav-panel-close:hover,
+.nav-panel-close:focus-visible {
+    color: var(--text-primary);
+    border-color: var(--border-light);
+}
+
+.nav-panel-links {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.nav-panel-link {
+    font-family: var(--font-nav);
+    font-size: 1rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 6px 0;
+    transition: color 0.2s ease;
+}
+
+.nav-panel-link:hover,
+.nav-panel-link:focus-visible,
+.nav-panel-link.active {
+    color: var(--text-primary);
+}
+
+.nav-panel-socials {
+    margin-top: auto;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.nav-panel-social {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--dock-size);
+    height: var(--dock-size);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.nav-panel-social:hover,
+.nav-panel-social:focus-visible {
+    color: var(--text-primary);
+    border-color: var(--border-light);
 }
 
 /* --- Hero Section --- */
@@ -1628,6 +1788,16 @@ a {
     }
 }
 
+@media (max-width: 900px) {
+    html.js .nav-right {
+        display: none;
+    }
+
+    html.js .nav-toggle {
+        display: inline-flex;
+    }
+}
+
 @media (max-width: 768px) {
     .hero-title {
         font-size: 1.8rem;
@@ -1698,6 +1868,13 @@ a {
 
     .social-links {
         gap: 10px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .nav-panel,
+    .nav-panel-backdrop {
+        transition: none;
     }
 }
 

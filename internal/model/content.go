@@ -31,11 +31,14 @@ type Link struct {
 
 // NavConfig holds navbar brand and link items.
 type NavConfig struct {
-	Logo        string            `yaml:"logo"`
-	LogoHref    string            `yaml:"logo_href"`
-	NewTabLabel string            `yaml:"new_tab_label,omitempty"`
-	PagePaths   map[string]string `yaml:"page_paths"`
-	Links       []Link            `yaml:"links"`
+	Logo           string            `yaml:"logo"`
+	LogoHref       string            `yaml:"logo_href"`
+	NewTabLabel    string            `yaml:"new_tab_label,omitempty"`
+	MenuOpenLabel  string            `yaml:"menu_open_label"`
+	MenuCloseLabel string            `yaml:"menu_close_label"`
+	PanelAriaLabel string            `yaml:"panel_aria_label"`
+	PagePaths      map[string]string `yaml:"page_paths"`
+	Links          []Link            `yaml:"links"`
 }
 
 // SectionConfig controls homepage section visibility and ordering.

@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initClock();
     initSmoothScroll();
     initNavHighlight();
+    initNavPanel();
     initCareerTabs();
     initCodeCopy();
     initTocHighlight();
@@ -599,4 +600,154 @@ function initTocHighlight() {
         observer.observe(entry.target);
     }
     updateFromPositions();
+}
+
+// --- Mobile Navigation Panel ---
+function initNavPanel() {
+    const toggle = document.querySelector('.nav-toggle');
+    const panel = document.getElementById('nav-panel');
+    const backdrop = document.getElementById('nav-panel-backdrop');
+    if (!toggle || !panel || !backdrop) return;
+
+    const closeBtn = panel.querySelector('.nav-panel-close');
+    const panelLinks = panel.querySelectorAll('a');
+    const backgroundTargets = [
+        document.querySelector('.sticky-nav'),
+        document.querySelector('.scroll-fade-wrapper'),
+    ].filter(Boolean);
+
+    let isOpen = false;
+    let hideTimer = null;
+
+    function getFocusableElements() {
+        return Array.from(
+            panel.querySelectorAll('button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])')
+        ).filter((el) => !el.hidden);
+    }
+
+    function setBackgroundInert(inertValue) {
+        for (const el of backgroundTargets) {
+            el.inert = inertValue;
+            if (inertValue) {
+                el.setAttribute('inert', '');
+            } else {
+                el.removeAttribute('inert');
+            }
+        }
+    }
+
+    function openPanel() {
+        if (isOpen) return;
+        isOpen = true;
+        if (hideTimer) {
+            clearTimeout(hideTimer);
+            hideTimer = null;
+        }
+        panel.hidden = false;
+        backdrop.hidden = false;
+        // Force reflow so the slide-in transition runs after removing [hidden].
+        void panel.offsetWidth;
+        panel.classList.add('is-open');
+        backdrop.classList.add('is-open');
+        toggle.setAttribute('aria-expanded', 'true');
+        if (document.body) {
+            document.body.style.overflow = 'hidden';
+        }
+        setBackgroundInert(true);
+        const focusTarget = closeBtn || getFocusableElements()[0];
+        if (focusTarget && typeof focusTarget.focus === 'function') {
+            focusTarget.focus();
+        }
+    }
+
+    function closePanel(restoreFocus = true) {
+        if (!isOpen) return;
+        isOpen = false;
+        panel.classList.remove('is-open');
+        backdrop.classList.remove('is-open');
+        toggle.setAttribute('aria-expanded', 'false');
+        if (document.body) {
+            document.body.style.overflow = '';
+        }
+        setBackgroundInert(false);
+
+        const reducedMotion =
+            typeof window.matchMedia === 'function' &&
+            window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        const finishHide = () => {
+            if (!isOpen) {
+                panel.hidden = true;
+                backdrop.hidden = true;
+            }
+        };
+
+        if (reducedMotion) {
+            finishHide();
+        } else {
+            hideTimer = setTimeout(finishHide, 280);
+        }
+
+        if (restoreFocus && typeof toggle.focus === 'function') {
+            toggle.focus();
+        }
+    }
+
+    toggle.addEventListener('click', () => {
+        if (isOpen) {
+            closePanel(true);
+        } else {
+            openPanel();
+        }
+    });
+
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => closePanel(true));
+    }
+
+    backdrop.addEventListener('click', () => closePanel(true));
+
+    for (const link of panelLinks) {
+        link.addEventListener('click', () => closePanel(false));
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (!isOpen) return;
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            closePanel(true);
+            return;
+        }
+        if (e.key === 'Tab') {
+            const focusables = getFocusableElements();
+            if (focusables.length === 0) return;
+            const first = focusables[0];
+            const last = focusables[focusables.length - 1];
+            if (e.shiftKey && document.activeElement === first) {
+                e.preventDefault();
+                last.focus();
+            } else if (!e.shiftKey && document.activeElement === last) {
+                e.preventDefault();
+                first.focus();
+            }
+        }
+    });
+
+    if (typeof window.matchMedia === 'function') {
+        const mobileQuery = window.matchMedia('(max-width: 900px)');
+        const onMediaChange = (e) => {
+            if (!e.matches && isOpen) {
+                closePanel(false);
+            }
+        };
+        if (typeof mobileQuery.addEventListener === 'function') {
+            mobileQuery.addEventListener('change', onMediaChange);
+        }
+    }
+
+    window.addEventListener('pageshow', () => {
+        if (isOpen) {
+            closePanel(false);
+        }
+    });
 }
