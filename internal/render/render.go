@@ -27,6 +27,7 @@ type PageSpec struct {
 	Title         func(*model.HomepageData) string
 	Description   func(*model.HomepageData) string
 	Post          *model.Post
+	Project       *model.ProjectItem
 }
 
 // ArticleLink represents an external action button rendered in the shared article header.
@@ -120,10 +121,13 @@ func BuildSite(templateDir, rootDir, outDir string, data *model.HomepageData) er
 	if err := preparePosts(data); err != nil {
 		return err
 	}
+	if err := prepareProjects(data); err != nil {
+		return err
+	}
 	return BuildPages(templateDir, rootDir, outDir, data, SitePages(data))
 }
 
-// SitePages returns all static pages plus one PageSpec per post.
+// SitePages returns all static pages plus one PageSpec per post and project.
 func SitePages(data *model.HomepageData) []PageSpec {
 	pages := DefaultPages()
 	for i := range data.SortedPosts {
@@ -141,6 +145,21 @@ func SitePages(data *model.HomepageData) []PageSpec {
 			Post:          &pCopy,
 		})
 	}
+	for i := range data.AllProjects {
+		proj := data.AllProjects[i]
+		pCopy := proj
+		pages = append(pages, PageSpec{
+			Key:           "projects",
+			Template:      "project.html",
+			Output:        filepath.ToSlash(filepath.Join("projects", pCopy.Slug, "index.html")),
+			CanonicalPath: "projects/" + pCopy.Slug + "/",
+			OGType:        "website",
+			PathSegments:  func(*model.HomepageData) []string { return []string{"projects", pCopy.Slug} },
+			Title:         func(*model.HomepageData) string { return pCopy.Title },
+			Description:   func(*model.HomepageData) string { return pCopy.Summary },
+			Project:       &pCopy,
+		})
+	}
 	return pages
 }
 
@@ -152,6 +171,9 @@ func BuildPages(templateDir, rootDir, outDir string, data *model.HomepageData, p
 	}
 
 	if err := preparePosts(data); err != nil {
+		return err
+	}
+	if err := prepareProjects(data); err != nil {
 		return err
 	}
 
@@ -200,6 +222,48 @@ func BuildPages(templateDir, rootDir, outDir string, data *model.HomepageData, p
 				ContentsLabel:     data.Posts.PostPage.ContentsLabel,
 				TOC:               postPtr.TOC,
 				Body:              postPtr.Body,
+			}
+		} else if p.Project != nil {
+			projPtr := p.Project
+			for idx := range data.AllProjects {
+				if data.AllProjects[idx].Slug == projPtr.Slug {
+					projPtr = &data.AllProjects[idx]
+					break
+				}
+			}
+			links := []ArticleLink{
+				{
+					Label:   data.Projects.ProjectPage.GitHubLabel,
+					Href:    projPtr.GitHubURL,
+					Icon:    "github",
+					Primary: true,
+				},
+			}
+			if projPtr.LiveURL != "" {
+				links = append(links, ArticleLink{
+					Label:   data.Projects.ProjectPage.LiveLabel,
+					Href:    projPtr.LiveURL,
+					Icon:    "external",
+					Primary: false,
+				})
+			}
+			article = &ArticleView{
+				BackHref:          data.Projects.ProjectPage.BackHref,
+				BackLabel:         data.Projects.ProjectPage.BackLabel,
+				Title:             projPtr.Title,
+				TitleSegments:     projPtr.TitleSegments,
+				Summary:           projPtr.Summary,
+				Updated:           projPtr.Updated,
+				FormattedUpdated:  projPtr.FormattedUpdated,
+				UpdatedLabel:      data.Posts.PostPage.UpdatedLabel,
+				LinksAriaLabel:    data.Projects.ProjectPage.LinksAriaLabel,
+				Links:             links,
+				Tags:              projPtr.Tags,
+				ShowTOC:           projPtr.ShowTOC,
+				ContentsAriaLabel: data.Posts.PostPage.ContentsAriaLabel,
+				ContentsLabel:     data.Posts.PostPage.ContentsLabel,
+				TOC:               projPtr.TOC,
+				Body:              projPtr.Body,
 			}
 		}
 		if err := renderPage(tmplPath, outHTML, PageContext{
@@ -333,6 +397,58 @@ func preparePosts(data *model.HomepageData) error {
 		data.LatestPost = &latest
 	} else {
 		data.LatestPost = nil
+	}
+	return nil
+}
+
+func prepareProjects(data *model.HomepageData) error {
+	if len(data.AllProjects) == 0 {
+		return nil
+	}
+	dateFormat := data.Posts.Page.DateFormat
+	if dateFormat == "" {
+		dateFormat = "Jan 2, 2006"
+	}
+	tocMin := data.Posts.PostPage.TOCMinItems
+	if tocMin < 1 {
+		tocMin = 2
+	}
+	labels := posts.CopyLabels{
+		Copy:   data.Posts.PostPage.CopyLabel,
+		Copied: data.Posts.PostPage.CopiedLabel,
+	}
+
+	for i := range data.AllProjects {
+		if data.AllProjects[i].Updated != "" {
+			if ut, err := time.Parse("2006-01-02", data.AllProjects[i].Updated); err == nil {
+				data.AllProjects[i].FormattedUpdated = ut.Format(dateFormat)
+			} else {
+				data.AllProjects[i].FormattedUpdated = data.AllProjects[i].Updated
+			}
+		}
+		if data.AllProjects[i].RawBody != "" && data.AllProjects[i].Body == "" {
+			rendered, rawTOC, err := posts.RenderMarkdownWithTOC(data.AllProjects[i].RawBody, labels)
+			if err != nil {
+				return fmt.Errorf("rendering project %s: %w", data.AllProjects[i].Slug, err)
+			}
+			data.AllProjects[i].Body = rendered
+			data.AllProjects[i].TOC = convertTOC(rawTOC)
+			data.AllProjects[i].ShowTOC = countTOCItems(data.AllProjects[i].TOC) >= tocMin
+		}
+		if data.AllProjects[i].URL == "" {
+			data.AllProjects[i].URL = "projects/" + data.AllProjects[i].Slug + "/"
+		}
+		data.AllProjects[i].TitleSegments = splitTitleSegments(data.AllProjects[i].Title, data.AllProjects[i].TitleColors)
+	}
+
+	bySlug := make(map[string]model.ProjectItem, len(data.AllProjects))
+	for _, p := range data.AllProjects {
+		bySlug[p.Slug] = p
+	}
+	for i := range data.FeaturedProjects {
+		if updated, ok := bySlug[data.FeaturedProjects[i].Slug]; ok {
+			data.FeaturedProjects[i] = updated
+		}
 	}
 	return nil
 }

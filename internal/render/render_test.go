@@ -341,6 +341,9 @@ func TestHeaderLogoPaths(t *testing.T) {
 		if page.Post != nil {
 			wantHref = "../../" + wantHref
 			wantLogo = data.Site.Nav.Logo + "posts/" + page.Post.Slug
+		} else if page.Project != nil {
+			wantHref = "../../" + wantHref
+			wantLogo = data.Site.Nav.Logo + "projects/" + page.Project.Slug
 		}
 		if m[1] != wantHref {
 			t.Errorf("%s: logo href = %q, want %q", page.Output, m[1], wantHref)
