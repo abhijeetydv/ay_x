@@ -44,7 +44,7 @@ func Homepage(data *model.HomepageData) error {
 	validateHero(&data.Hero, &errs)
 	validateSocial(&data.Social, &errs)
 	validateExperience(&data.Experience, &errs)
-	validateProjects(&data.Projects, &errs)
+	validateProjects(&data.Projects, data.AllProjects, &errs)
 	validateSkills(&data.Skills, &errs)
 	validateAbout(&data.About, &errs)
 	validateAboutPage(&data.AboutPage, &errs)
@@ -75,11 +75,14 @@ func Homepage(data *model.HomepageData) error {
 		}
 	}
 
-	// Build sorted all projects and featured projects lists.
-	allProjects := make([]model.ProjectItem, len(data.Projects.Items))
-	copy(allProjects, data.Projects.Items)
+	// Build sorted all projects (order ascending, ties by slug) and featured projects lists.
+	allProjects := make([]model.ProjectItem, len(data.AllProjects))
+	copy(allProjects, data.AllProjects)
 	sort.SliceStable(allProjects, func(i, j int) bool {
-		return allProjects[i].Order < allProjects[j].Order
+		if allProjects[i].Order != allProjects[j].Order {
+			return allProjects[i].Order < allProjects[j].Order
+		}
+		return allProjects[i].Slug < allProjects[j].Slug
 	})
 	data.AllProjects = allProjects
 
@@ -316,7 +319,7 @@ func validateExperience(e *model.ExperienceConfig, errs *[]string) {
 	checkEntries("education", e.Tabs.Education)
 }
 
-func validateProjects(p *model.ProjectsConfig, errs *[]string) {
+func validateProjects(p *model.ProjectsConfig, projectItems []model.ProjectItem, errs *[]string) {
 	if strings.TrimSpace(p.Title) == "" {
 		*errs = append(*errs, "projects.yaml: title is required")
 	}
@@ -342,24 +345,79 @@ func validateProjects(p *model.ProjectsConfig, errs *[]string) {
 	if !isSafeHref(p.Page.BackHref) {
 		*errs = append(*errs, fmt.Sprintf("projects.yaml: page.back_href %q is invalid", p.Page.BackHref))
 	}
-	seenIDs := map[string]bool{}
-	for i, item := range p.Items {
-		if strings.TrimSpace(item.ID) == "" {
-			*errs = append(*errs, fmt.Sprintf("projects.yaml: items[%d].id is required", i))
-		} else if seenIDs[item.ID] {
-			*errs = append(*errs, fmt.Sprintf("projects.yaml: duplicate project id %q", item.ID))
+	if strings.TrimSpace(p.ProjectPage.BackLabel) == "" {
+		*errs = append(*errs, "projects.yaml: project_page.back_label is required")
+	}
+	if !isSafeHref(p.ProjectPage.BackHref) {
+		*errs = append(*errs, fmt.Sprintf("projects.yaml: project_page.back_href %q is invalid", p.ProjectPage.BackHref))
+	}
+	if strings.TrimSpace(p.ProjectPage.GitHubLabel) == "" {
+		*errs = append(*errs, "projects.yaml: project_page.github_label is required")
+	}
+	if strings.TrimSpace(p.ProjectPage.LiveLabel) == "" {
+		*errs = append(*errs, "projects.yaml: project_page.live_label is required")
+	}
+	if strings.TrimSpace(p.ProjectPage.LinksAriaLabel) == "" {
+		*errs = append(*errs, "projects.yaml: project_page.links_aria_label is required")
+	}
+
+	allowedColors, sortedAllowed := titleColorAllowlist()
+	seenSlugs := map[string]bool{}
+	for _, item := range projectItems {
+		loc := item.SourcePath
+		if loc == "" {
+			loc = item.Slug
 		}
-		seenIDs[item.ID] = true
+		if !slugRe.MatchString(item.Slug) {
+			*errs = append(*errs, fmt.Sprintf("%s: slug %q must match ^[a-z0-9]+(-[a-z0-9]+)*$", loc, item.Slug))
+		} else if seenSlugs[item.Slug] {
+			*errs = append(*errs, fmt.Sprintf("%s: duplicate project slug %q", loc, item.Slug))
+		}
+		seenSlugs[item.Slug] = true
+
 		if strings.TrimSpace(item.Title) == "" {
-			*errs = append(*errs, fmt.Sprintf("projects.yaml: items[%d].title is required", i))
+			*errs = append(*errs, fmt.Sprintf("%s: title is required", loc))
 		}
+		if !item.HasOrder {
+			*errs = append(*errs, fmt.Sprintf("%s: order is required", loc))
+		}
+		validateDescription(fmt.Sprintf("%s: summary", loc), item.Summary, errs)
 		if strings.TrimSpace(item.Owner) == "" || strings.TrimSpace(item.Repo) == "" {
-			*errs = append(*errs, fmt.Sprintf("projects.yaml: items[%d] requires owner and repo", i))
+			*errs = append(*errs, fmt.Sprintf("%s: owner and repo are required", loc))
 		}
 		if item.Stars < 0 {
-			*errs = append(*errs, fmt.Sprintf("projects.yaml: items[%d].stars cannot be negative", i))
+			*errs = append(*errs, fmt.Sprintf("%s: stars cannot be negative", loc))
 		}
+		if !isSafeGitHubURL(item.GitHubURL) {
+			*errs = append(*errs, fmt.Sprintf("%s: github_url %q must be a valid https://github.com/... URL", loc, item.GitHubURL))
+		}
+		if item.LiveURL != "" && !isSafeHTTPSURL(item.LiveURL) {
+			*errs = append(*errs, fmt.Sprintf("%s: live_url %q must be a valid https:// URL", loc, item.LiveURL))
+		}
+		if item.Updated != "" {
+			if _, err := time.Parse("2006-01-02", item.Updated); err != nil {
+				*errs = append(*errs, fmt.Sprintf("%s: updated %q must be YYYY-MM-DD", loc, item.Updated))
+			}
+		}
+		validateTags(loc, item.Tags, errs)
+		validateTitleColors(loc, item.Title, item.TitleColors, allowedColors, sortedAllowed, errs)
 	}
+}
+
+func isSafeHTTPSURL(raw string) bool {
+	u, err := url.Parse(raw)
+	if err != nil || u.Host == "" {
+		return false
+	}
+	return strings.ToLower(u.Scheme) == "https"
+}
+
+func isSafeGitHubURL(raw string) bool {
+	u, err := url.Parse(raw)
+	if err != nil || u.Host == "" {
+		return false
+	}
+	return strings.ToLower(u.Scheme) == "https" && strings.EqualFold(u.Host, "github.com")
 }
 
 func validateSkills(s *model.SkillsConfig, errs *[]string) {
@@ -495,13 +553,7 @@ func validatePosts(p *model.PostsConfig, postItems []model.Post, errs *[]string)
 		*errs = append(*errs, "posts.yaml: post_page.toc_min_items must be at least 1")
 	}
 
-	allowedColors := make(map[string]bool, len(model.AllowedTitleColors))
-	sortedAllowed := make([]string, len(model.AllowedTitleColors))
-	copy(sortedAllowed, model.AllowedTitleColors)
-	sort.Strings(sortedAllowed)
-	for _, c := range model.AllowedTitleColors {
-		allowedColors[c] = true
-	}
+	allowedColors, sortedAllowed := titleColorAllowlist()
 
 	seenSlugs := map[string]bool{}
 	for _, item := range postItems {
@@ -528,44 +580,62 @@ func validatePosts(p *model.PostsConfig, postItems []model.Post, errs *[]string)
 			}
 		}
 		validateDescription(fmt.Sprintf("%s: summary", loc), item.Summary, errs)
+		validateTags(loc, item.Tags, errs)
+		validateTitleColors(loc, item.Title, item.TitleColors, allowedColors, sortedAllowed, errs)
+	}
+}
 
-		for j, tag := range item.Tags {
-			if strings.TrimSpace(tag) == "" || strings.ContainsAny(tag, " \t\r\n") || tag != strings.ToLower(tag) {
-				*errs = append(*errs, fmt.Sprintf("%s: tags[%d] %q must be a non-empty lowercase string without whitespace", loc, j, tag))
+func titleColorAllowlist() (map[string]bool, []string) {
+	allowedColors := make(map[string]bool, len(model.AllowedTitleColors))
+	sortedAllowed := make([]string, len(model.AllowedTitleColors))
+	copy(sortedAllowed, model.AllowedTitleColors)
+	sort.Strings(sortedAllowed)
+	for _, c := range model.AllowedTitleColors {
+		allowedColors[c] = true
+	}
+	return allowedColors, sortedAllowed
+}
+
+func validateTags(loc string, tags []string, errs *[]string) {
+	for j, tag := range tags {
+		if strings.TrimSpace(tag) == "" || strings.ContainsAny(tag, " \t\r\n") || tag != strings.ToLower(tag) {
+			*errs = append(*errs, fmt.Sprintf("%s: tags[%d] %q must be a non-empty lowercase string without whitespace", loc, j, tag))
+		}
+	}
+}
+
+func validateTitleColors(loc, title string, colors []model.TitleColor, allowedColors map[string]bool, sortedAllowed []string, errs *[]string) {
+	if len(colors) == 0 {
+		return
+	}
+	type span struct {
+		start int
+		end   int
+		idx   int
+	}
+	var spans []span
+	for j, tc := range colors {
+		if !allowedColors[tc.Color] {
+			*errs = append(*errs, fmt.Sprintf("%s: title_colors[%d].color %q is not allowed (allowed: %s)", loc, j, tc.Color, strings.Join(sortedAllowed, ", ")))
+		}
+		if tc.Text == "" {
+			*errs = append(*errs, fmt.Sprintf("%s: title_colors[%d].text must not be empty", loc, j))
+			continue
+		}
+		// If text appears more than once in title, the FIRST occurrence is coloured.
+		idx := strings.Index(title, tc.Text)
+		if idx == -1 {
+			*errs = append(*errs, fmt.Sprintf("%s: title_colors[%d].text %q was not found in title %q (exact, case-sensitive)", loc, j, tc.Text, title))
+			continue
+		}
+		start, end := idx, idx+len(tc.Text)
+		for _, prev := range spans {
+			if start < prev.end && prev.start < end {
+				*errs = append(*errs, fmt.Sprintf("%s: title_colors[%d] (%q) overlaps with title_colors[%d]", loc, j, tc.Text, prev.idx))
+				break
 			}
 		}
-
-		if len(item.TitleColors) > 0 {
-			type span struct {
-				start int
-				end   int
-				idx   int
-			}
-			var spans []span
-			for j, tc := range item.TitleColors {
-				if !allowedColors[tc.Color] {
-					*errs = append(*errs, fmt.Sprintf("%s: title_colors[%d].color %q is not allowed (allowed: %s)", loc, j, tc.Color, strings.Join(sortedAllowed, ", ")))
-				}
-				if tc.Text == "" {
-					*errs = append(*errs, fmt.Sprintf("%s: title_colors[%d].text must not be empty", loc, j))
-					continue
-				}
-				// If text appears more than once in title, the FIRST occurrence is coloured.
-				idx := strings.Index(item.Title, tc.Text)
-				if idx == -1 {
-					*errs = append(*errs, fmt.Sprintf("%s: title_colors[%d].text %q was not found in title %q (exact, case-sensitive)", loc, j, tc.Text, item.Title))
-					continue
-				}
-				start, end := idx, idx+len(tc.Text)
-				for _, prev := range spans {
-					if start < prev.end && prev.start < end {
-						*errs = append(*errs, fmt.Sprintf("%s: title_colors[%d] (%q) overlaps with title_colors[%d]", loc, j, tc.Text, prev.idx))
-						break
-					}
-				}
-				spans = append(spans, span{start: start, end: end, idx: j})
-			}
-		}
+		spans = append(spans, span{start: start, end: end, idx: j})
 	}
 }
 

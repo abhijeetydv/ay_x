@@ -6,59 +6,7 @@
 
     <div class="scroll-fade-wrapper">
         <div class="container main-content">
-            <article class="post-article">
-                <header class="post-header">
-                    <a href="{{rel .Root .Posts.PostPage.BackHref}}" class="back-link">{{.Posts.PostPage.BackLabel}}</a>
-                    <h1 class="post-title-display">{{if .Post.TitleSegments}}{{range .Post.TitleSegments}}{{if .Color}}<span class="title-color title-{{.Color}}">{{.Text}}</span>{{else}}{{.Text}}{{end}}{{end}}{{else}}{{.Post.Title}}{{end}}</h1>
-                    <div class="post-meta">
-                        <time datetime="{{.Post.Date}}">{{.Post.FormattedDate}}</time>
-                        {{if .Post.Updated}}
-                        <span class="post-meta-sep">·</span>
-                        <span>{{.Posts.PostPage.UpdatedLabel}} <time datetime="{{.Post.Updated}}">{{.Post.FormattedUpdated}}</time></span>
-                        {{end}}
-                    </div>
-                    {{if .Post.Tags}}
-                    <div class="post-tags">
-                        <svg class="post-tags-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
-                        {{range .Post.Tags}}
-                        <span class="tag {{tagColor .}}">{{.}}</span>
-                        {{end}}
-                    </div>
-                    {{end}}
-                </header>
-
-                {{if .Post.ShowTOC}}
-                <div class="post-layout has-toc">
-                    <nav class="toc" aria-label="{{.Posts.PostPage.ContentsAriaLabel}}">
-                        <p class="toc-label">{{.Posts.PostPage.ContentsLabel}}</p>
-                        <ol class="toc-list">
-                            {{range .Post.TOC}}
-                            <li class="toc-item">
-                                <a href="#{{.ID}}" class="toc-link">{{.Text}}</a>
-                                {{if .Children}}
-                                <ol class="toc-sublist">
-                                    {{range .Children}}
-                                    <li class="toc-subitem">
-                                        <a href="#{{.ID}}" class="toc-link">{{.Text}}</a>
-                                    </li>
-                                    {{end}}
-                                </ol>
-                                {{end}}
-                            </li>
-                            {{end}}
-                        </ol>
-                    </nav>
-                    <div class="post-body">
-                        {{.Post.Body}}
-                    </div>
-                </div>
-                {{else}}
-                <div class="post-body">
-                    {{.Post.Body}}
-                </div>
-                {{end}}
-                <span class="sr-only" role="status" aria-live="polite" id="copy-status"></span>
-            </article>
+{{template "article_layout" .}}
         </div>
 
 {{template "footer" .}}

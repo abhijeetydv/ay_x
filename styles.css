@@ -842,24 +842,16 @@ a {
     padding: 36px 0 64px;
 }
 
-.post-header {
-    max-width: var(--width-post-title);
-    margin: 0 auto 40px;
-    text-align: center;
-}
-
 .post-title-display {
     font-size: clamp(1.9rem, 4.5vw, 3.2rem);
     line-height: 1.14;
     text-transform: uppercase;
     letter-spacing: -0.02em;
     overflow-wrap: anywhere;
-    margin-bottom: 18px;
 }
 
 .post-meta {
     display: flex;
-    justify-content: center;
     align-items: center;
     gap: 10px;
     flex-wrap: wrap;
@@ -870,7 +862,6 @@ a {
 
 .post-tags {
     display: flex;
-    justify-content: center;
     align-items: center;
     gap: 8px;
     flex-wrap: wrap;
@@ -879,6 +870,105 @@ a {
 .post-tags-icon {
     color: var(--text-muted);
     flex-shrink: 0;
+}
+
+/* --- Centered Article Variant (Posts) --- */
+.article-layout--centered .post-header {
+    max-width: var(--width-post-title);
+    margin: 0 auto 40px;
+    text-align: center;
+}
+
+.article-layout--centered .post-title-display {
+    margin-bottom: 18px;
+}
+
+.article-layout--centered .post-meta,
+.article-layout--centered .post-tags {
+    justify-content: center;
+}
+
+/* --- Split Article Variant (Projects) --- */
+.article-layout--split .post-back {
+    max-width: var(--width-post-body);
+    margin: 0 auto 16px;
+}
+
+.article-layout--split .post-back .back-link {
+    margin-bottom: 0;
+}
+
+.article-layout--split .post-header {
+    max-width: var(--width-post-body);
+    margin: 0 auto 40px;
+    text-align: left;
+}
+
+.article-layout--split .post-title-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-bottom: 18px;
+}
+
+.article-layout--split .post-title-display {
+    margin-bottom: 0;
+}
+
+.article-layout--split .post-meta,
+.article-layout--split .post-tags {
+    justify-content: flex-start;
+}
+
+.article-layout--split .post-header .project-summary {
+    max-width: 60ch;
+    margin: 0 0 20px;
+    font-size: 0.95rem;
+    line-height: 1.65;
+    color: var(--text-secondary);
+}
+
+.project-links {
+    margin: 0;
+}
+
+.project-links-list {
+    list-style: none;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+}
+
+.project-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.project-link:hover {
+    color: var(--text-primary);
+    border-color: var(--border-light);
+    background: var(--bg-card-hover);
+}
+
+.project-link:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    color: var(--text-primary);
 }
 
 /* --- Post Contents Sidebar (No Divider Lines) --- */
@@ -941,6 +1031,15 @@ a {
 }
 
 @media (min-width: 1000px) {
+    .article-layout--split:has(.post-layout.has-toc) .post-back {
+        max-width: calc(240px + 48px + var(--width-post-body));
+    }
+
+    .article-layout--split:has(.post-layout.has-toc) .post-header {
+        max-width: calc(240px + 48px + var(--width-post-body));
+        padding-left: calc(240px + 48px);
+    }
+
     .post-layout.has-toc {
         display: grid;
         grid-template-columns: 240px minmax(0, var(--width-post-body));
@@ -1271,11 +1370,18 @@ a {
 }
 
 .project-card {
+    position: relative;
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     overflow: hidden;
     transition: border-color 0.3s ease, transform 0.2s ease;
+}
+
+.project-card:has(.project-card-link:focus-visible) {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-color: var(--border-light);
 }
 
 .project-card:hover {
@@ -1355,6 +1461,21 @@ a {
     font-size: 1.05rem;
     font-weight: 600;
     margin-bottom: 10px;
+}
+
+.project-card-link {
+    color: inherit;
+    text-decoration: none;
+}
+
+.project-card-link::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+}
+
+.project-card-link:focus-visible {
+    outline: none;
 }
 
 .project-summary {
@@ -1972,7 +2093,8 @@ a {
 
 @media (prefers-reduced-motion: reduce) {
     .nav-panel,
-    .nav-panel-backdrop {
+    .nav-panel-backdrop,
+    .project-link {
         transition: none;
     }
 }

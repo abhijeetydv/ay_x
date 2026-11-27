@@ -27,12 +27,12 @@ func TestValidContentDirectory(t *testing.T) {
 	if len(data.FeaturedProjects) == 0 {
 		t.Fatal("expected at least 1 featured project, got 0")
 	}
-	seenIDs := make(map[string]bool, len(data.Projects.Items))
-	for _, item := range data.Projects.Items {
-		if seenIDs[item.ID] {
-			t.Fatalf("duplicate project ID %q", item.ID)
+	seenIDs := make(map[string]bool, len(data.AllProjects))
+	for _, item := range data.AllProjects {
+		if seenIDs[item.Slug] {
+			t.Fatalf("duplicate project slug %q", item.Slug)
 		}
-		seenIDs[item.ID] = true
+		seenIDs[item.Slug] = true
 	}
 }
 
@@ -47,8 +47,8 @@ func TestFixtureContentCounts(t *testing.T) {
 	if len(data.OrderedSections) != 6 {
 		t.Fatalf("expected 6 ordered sections, got %d", len(data.OrderedSections))
 	}
-	if len(data.FeaturedProjects) != 2 {
-		t.Fatalf("expected 2 featured projects, got %d", len(data.FeaturedProjects))
+	if len(data.FeaturedProjects) != 1 {
+		t.Fatalf("expected 1 featured project, got %d", len(data.FeaturedProjects))
 	}
 }
 
@@ -68,9 +68,9 @@ func TestDuplicateProjectIDRejected(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadAll failed: %v", err)
 	}
-	data.Projects.Items[1].ID = data.Projects.Items[0].ID
+	data.AllProjects[1].Slug = data.AllProjects[0].Slug
 	if err := validate.Homepage(data); err == nil {
-		t.Fatal("expected validation error for duplicate project id, got nil")
+		t.Fatal("expected validation error for duplicate project slug, got nil")
 	}
 }
 
@@ -286,5 +286,74 @@ func TestDuplicateDockItemRejected(t *testing.T) {
 	data.Social.Dock.Items = append(data.Social.Dock.Items, data.Social.Dock.Items[0])
 	if err := validate.Homepage(data); err == nil {
 		t.Fatal("expected validation error for duplicate dock item, got nil")
+	}
+}
+
+func TestProjectValidationErrors(t *testing.T) {
+	cases := []struct {
+		name   string
+		mutate func(*model.HomepageData)
+	}{
+		{
+			name: "bad slug",
+			mutate: func(d *model.HomepageData) {
+				d.AllProjects[0].Slug = "Bad_Slug"
+			},
+		},
+		{
+			name: "missing order",
+			mutate: func(d *model.HomepageData) {
+				d.AllProjects[0].HasOrder = false
+			},
+		},
+		{
+			name: "github_url wrong host",
+			mutate: func(d *model.HomepageData) {
+				d.AllProjects[0].GitHubURL = "https://gitlab.com/testuser/proj-1"
+			},
+		},
+		{
+			name: "missing github_url",
+			mutate: func(d *model.HomepageData) {
+				d.AllProjects[0].GitHubURL = ""
+			},
+		},
+		{
+			name: "non-https live_url",
+			mutate: func(d *model.HomepageData) {
+				d.AllProjects[0].LiveURL = "http://example.com/proj-1"
+			},
+		},
+		{
+			name: "summary over 200 chars",
+			mutate: func(d *model.HomepageData) {
+				d.AllProjects[0].Summary = strings.Repeat("a", 201)
+			},
+		},
+		{
+			name: "title_colors text not in title",
+			mutate: func(d *model.HomepageData) {
+				d.AllProjects[0].TitleColors = []model.TitleColor{{Text: "NotPresent", Color: "blue"}}
+			},
+		},
+		{
+			name: "title_colors unknown color",
+			mutate: func(d *model.HomepageData) {
+				d.AllProjects[0].TitleColors = []model.TitleColor{{Text: "One", Color: "magenta"}}
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			data, err := loader.LoadAll("testdata/valid")
+			if err != nil {
+				t.Fatalf("LoadAll failed: %v", err)
+			}
+			tc.mutate(data)
+			if err := validate.Homepage(data); err == nil {
+				t.Fatalf("%s: expected validation error, got nil", tc.name)
+			}
+		})
 	}
 }

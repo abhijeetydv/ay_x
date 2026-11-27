@@ -1,0 +1,111 @@
+{{define "article_layout"}}
+            <article class="post-article article-layout--{{.Article.Variant}}">
+                {{if eq .Article.Variant "split"}}
+                <div class="post-back">
+                    <a href="{{rel .Root .Article.BackHref}}" class="back-link">{{.Article.BackLabel}}</a>
+                </div>
+                <header class="post-header">
+                    <div class="post-title-row">
+                        <h1 class="post-title-display">{{if .Article.TitleSegments}}{{range .Article.TitleSegments}}{{if .Color}}<span class="title-color title-{{.Color}}">{{.Text}}</span>{{else}}{{.Text}}{{end}}{{end}}{{else}}{{.Article.Title}}{{end}}</h1>
+                        {{if .Article.Links}}
+                        <nav class="project-links" aria-label="{{.Article.LinksAriaLabel}}">
+                            <ul class="project-links-list">
+                                {{$newTabLabel := .Site.Nav.NewTabLabel}}
+                                {{range .Article.Links}}
+                                <li>
+                                    <a class="project-link" href="{{.Href}}" target="_blank" rel="noopener noreferrer" aria-label="{{.Label}}" title="{{.Label}}">
+                                        {{if eq .Icon "github"}}{{template "social_icon_18" "github"}}{{else if eq .Icon "external"}}<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>{{end}}
+                                        <span class="sr-only">{{.Label}}{{if $newTabLabel}} ({{$newTabLabel}}){{end}}</span>
+                                    </a>
+                                </li>
+                                {{end}}
+                            </ul>
+                        </nav>
+                        {{end}}
+                    </div>
+                    {{if .Article.Summary}}
+                    <p class="project-summary">{{.Article.Summary}}</p>
+                    {{end}}
+                    {{if or .Article.Date .Article.Updated}}
+                    <div class="post-meta">
+                        {{if .Article.Date}}
+                        <time datetime="{{.Article.Date}}">{{.Article.FormattedDate}}</time>
+                        {{if .Article.Updated}}
+                        <span class="post-meta-sep">·</span>
+                        <span>{{.Article.UpdatedLabel}} <time datetime="{{.Article.Updated}}">{{.Article.FormattedUpdated}}</time></span>
+                        {{end}}
+                        {{else if .Article.Updated}}
+                        <span>{{.Article.UpdatedLabel}} <time datetime="{{.Article.Updated}}">{{.Article.FormattedUpdated}}</time></span>
+                        {{end}}
+                    </div>
+                    {{end}}
+                    {{if .Article.Tags}}
+                    <div class="post-tags">
+                        <svg class="post-tags-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                        {{range .Article.Tags}}
+                        <span class="tag {{tagColor .}}">{{.}}</span>
+                        {{end}}
+                    </div>
+                    {{end}}
+                </header>
+                {{else}}
+                <header class="post-header">
+                    <a href="{{rel .Root .Article.BackHref}}" class="back-link">{{.Article.BackLabel}}</a>
+                    <h1 class="post-title-display">{{if .Article.TitleSegments}}{{range .Article.TitleSegments}}{{if .Color}}<span class="title-color title-{{.Color}}">{{.Text}}</span>{{else}}{{.Text}}{{end}}{{end}}{{else}}{{.Article.Title}}{{end}}</h1>
+                    {{if or .Article.Date .Article.Updated}}
+                    <div class="post-meta">
+                        {{if .Article.Date}}
+                        <time datetime="{{.Article.Date}}">{{.Article.FormattedDate}}</time>
+                        {{if .Article.Updated}}
+                        <span class="post-meta-sep">·</span>
+                        <span>{{.Article.UpdatedLabel}} <time datetime="{{.Article.Updated}}">{{.Article.FormattedUpdated}}</time></span>
+                        {{end}}
+                        {{else if .Article.Updated}}
+                        <span>{{.Article.UpdatedLabel}} <time datetime="{{.Article.Updated}}">{{.Article.FormattedUpdated}}</time></span>
+                        {{end}}
+                    </div>
+                    {{end}}
+                    {{if .Article.Tags}}
+                    <div class="post-tags">
+                        <svg class="post-tags-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                        {{range .Article.Tags}}
+                        <span class="tag {{tagColor .}}">{{.}}</span>
+                        {{end}}
+                    </div>
+                    {{end}}
+                </header>
+                {{end}}
+
+                {{if .Article.ShowTOC}}
+                <div class="post-layout has-toc">
+                    <nav class="toc" aria-label="{{.Article.ContentsAriaLabel}}">
+                        <p class="toc-label">{{.Article.ContentsLabel}}</p>
+                        <ol class="toc-list">
+                            {{range .Article.TOC}}
+                            <li class="toc-item">
+                                <a href="#{{.ID}}" class="toc-link">{{.Text}}</a>
+                                {{if .Children}}
+                                <ol class="toc-sublist">
+                                    {{range .Children}}
+                                    <li class="toc-subitem">
+                                        <a href="#{{.ID}}" class="toc-link">{{.Text}}</a>
+                                    </li>
+                                    {{end}}
+                                </ol>
+                                {{end}}
+                            </li>
+                            {{end}}
+                        </ol>
+                    </nav>
+                    <div class="post-body">
+                        {{.Article.Body}}
+                    </div>
+                </div>
+                {{else}}
+                <div class="post-body">
+                    {{.Article.Body}}
+                </div>
+                {{end}}
+                <span class="sr-only" role="status" aria-live="polite" id="copy-status"></span>
+            </article>
+{{end}}
