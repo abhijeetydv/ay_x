@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"portfolio/internal/model"
+	"portfolio/internal/posts"
 )
 
 // PageSpec describes a single generated HTML page.
@@ -20,15 +21,19 @@ type PageSpec struct {
 	Template      string
 	Output        string
 	CanonicalPath string
+	OGType        string
 	PathSegments  func(*model.HomepageData) []string
 	Title         func(*model.HomepageData) string
 	Description   func(*model.HomepageData) string
+	Post          *model.Post
 }
 
 // PageContext wraps HomepageData with the active page metadata.
 type PageContext struct {
 	*model.HomepageData
 	Page            string
+	Root            string
+	OGType          string
 	PageTitle       string
 	PageDescription string
 	CanonicalURL    string
@@ -36,6 +41,7 @@ type PageContext struct {
 	FaviconType     string
 	PathSegments    []string
 	LogoText        string
+	Post            *model.Post
 }
 
 // DefaultPages returns the configured pages to generate for the site.
@@ -84,10 +90,34 @@ func DefaultPages() []PageSpec {
 	}
 }
 
-// BuildSite renders all configured pages from a single loaded HomepageData
-// and copies static assets (styles.css, script.js, and optional assets/) once.
+// BuildSite renders all configured pages (including individual post pages)
+// from a single loaded HomepageData and copies static assets once.
 func BuildSite(templateDir, rootDir, outDir string, data *model.HomepageData) error {
-	return BuildPages(templateDir, rootDir, outDir, data, DefaultPages())
+	if err := preparePosts(data); err != nil {
+		return err
+	}
+	return BuildPages(templateDir, rootDir, outDir, data, SitePages(data))
+}
+
+// SitePages returns all static pages plus one PageSpec per post.
+func SitePages(data *model.HomepageData) []PageSpec {
+	pages := DefaultPages()
+	for i := range data.SortedPosts {
+		post := data.SortedPosts[i]
+		pCopy := post
+		pages = append(pages, PageSpec{
+			Key:           "posts",
+			Template:      "post.html",
+			Output:        filepath.ToSlash(filepath.Join("posts", pCopy.Slug, "index.html")),
+			CanonicalPath: "posts/" + pCopy.Slug + "/",
+			OGType:        "article",
+			PathSegments:  func(*model.HomepageData) []string { return []string{"posts", pCopy.Slug} },
+			Title:         func(*model.HomepageData) string { return pCopy.Title },
+			Description:   func(*model.HomepageData) string { return pCopy.Summary },
+			Post:          &pCopy,
+		})
+	}
+	return pages
 }
 
 // BuildPages renders the given pages from a single loaded HomepageData
@@ -97,7 +127,9 @@ func BuildPages(templateDir, rootDir, outDir string, data *model.HomepageData, p
 		return fmt.Errorf("creating output directory %s: %w", outDir, err)
 	}
 
-	preparePosts(data)
+	if err := preparePosts(data); err != nil {
+		return err
+	}
 
 	for _, p := range pages {
 		title := data.Site.Title
@@ -112,12 +144,27 @@ func BuildPages(templateDir, rootDir, outDir string, data *model.HomepageData, p
 				desc = d
 			}
 		}
+		ogType := p.OGType
+		if ogType == "" {
+			ogType = "website"
+		}
 		tmplPath := filepath.Join(templateDir, p.Template)
-		outHTML := filepath.Join(outDir, p.Output)
+		outHTML := filepath.Join(outDir, filepath.FromSlash(p.Output))
 		segments := resolvePathSegments(data, p)
+		postPtr := p.Post
+		if postPtr != nil {
+			for idx := range data.SortedPosts {
+				if data.SortedPosts[idx].Slug == postPtr.Slug {
+					postPtr = &data.SortedPosts[idx]
+					break
+				}
+			}
+		}
 		if err := renderPage(tmplPath, outHTML, PageContext{
 			HomepageData:    data,
 			Page:            p.Key,
+			Root:            rootPrefix(p.Output),
+			OGType:          ogType,
 			PageTitle:       title,
 			PageDescription: desc,
 			CanonicalURL:    data.Site.URL + p.CanonicalPath,
@@ -125,6 +172,7 @@ func BuildPages(templateDir, rootDir, outDir string, data *model.HomepageData, p
 			FaviconType:     faviconMIMEType(data.Site.Favicon),
 			PathSegments:    segments,
 			LogoText:        data.Site.Nav.Logo + strings.Join(segments, "/"),
+			Post:            postPtr,
 		}); err != nil {
 			return err
 		}
@@ -179,13 +227,18 @@ func writeRobots(outPath, baseURL string) error {
 	return nil
 }
 
-func preparePosts(data *model.HomepageData) {
+func preparePosts(data *model.HomepageData) error {
 	items := make([]model.Post, len(data.SortedPosts))
 	copy(items, data.SortedPosts)
 
 	dateFormat := data.Posts.Page.DateFormat
 	if dateFormat == "" {
 		dateFormat = "Jan 2, 2006"
+	}
+
+	labels := posts.CopyLabels{
+		Copy:   data.Posts.PostPage.CopyLabel,
+		Copied: data.Posts.PostPage.CopiedLabel,
 	}
 
 	parsedDates := make(map[string]time.Time, len(items))
@@ -203,6 +256,13 @@ func preparePosts(data *model.HomepageData) {
 			} else {
 				items[i].FormattedUpdated = items[i].Updated
 			}
+		}
+		if items[i].RawBody != "" && items[i].Body == "" {
+			rendered, err := posts.RenderMarkdown(items[i].RawBody, labels)
+			if err != nil {
+				return fmt.Errorf("rendering post %s: %w", items[i].Slug, err)
+			}
+			items[i].Body = rendered
 		}
 		if items[i].URL == "" {
 			items[i].URL = "#"
@@ -228,6 +288,15 @@ func preparePosts(data *model.HomepageData) {
 	} else {
 		data.LatestPost = nil
 	}
+	return nil
+}
+
+func rootPrefix(outputPath string) string {
+	depth := strings.Count(filepath.ToSlash(filepath.Clean(outputPath)), "/")
+	if depth <= 0 {
+		return ""
+	}
+	return strings.Repeat("../", depth)
 }
 
 func resolvePathSegments(data *model.HomepageData, p PageSpec) []string {
@@ -286,6 +355,21 @@ func renderPage(templatePath, outHTML string, ctx PageContext) error {
 			}
 			return href
 		},
+		"rel": func(root, href string) string {
+			if root == "" || href == "" {
+				return href
+			}
+			l := strings.ToLower(href)
+			if strings.HasPrefix(l, "http://") ||
+				strings.HasPrefix(l, "https://") ||
+				strings.HasPrefix(l, "mailto:") ||
+				strings.HasPrefix(l, "tel:") ||
+				strings.HasPrefix(href, "//") ||
+				strings.HasPrefix(href, "#") {
+				return href
+			}
+			return root + href
+		},
 	}
 
 	files := []string{templatePath}
@@ -297,6 +381,10 @@ func renderPage(templatePath, outHTML string, ctx PageContext) error {
 	tmpl, err := template.New(filepath.Base(templatePath)).Funcs(funcs).ParseFiles(files...)
 	if err != nil {
 		return fmt.Errorf("parsing template %s: %w", templatePath, err)
+	}
+
+	if err := os.MkdirAll(filepath.Dir(outHTML), 0o755); err != nil {
+		return fmt.Errorf("creating parent dir for %s: %w", outHTML, err)
 	}
 
 	f, err := os.Create(outHTML)

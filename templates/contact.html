@@ -7,7 +7,7 @@
     <div class="scroll-fade-wrapper">
         <div class="container main-content">
             <section class="page-header">
-                <a href="{{.Contact.Page.BackHref}}" class="back-link">{{.Contact.Page.BackLabel}}</a>
+                <a href="{{rel .Root .Contact.Page.BackHref}}" class="back-link">{{.Contact.Page.BackLabel}}</a>
                 <h1 class="page-title">{{.Contact.Page.Heading}}</h1>
                 <p class="page-intro">{{.Contact.Page.Intro}}</p>
             </section>
@@ -47,6 +47,6 @@
 {{template "footer" .}}
     </div>
 
-    <script src="script.js"></script>
+    <script src="{{rel .Root "script.js"}}"></script>
 </body>
 </html>

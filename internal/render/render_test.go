@@ -86,20 +86,26 @@ func TestLinkAndAssetIntegrity(t *testing.T) {
 		t.Fatalf("BuildSite failed: %v", err)
 	}
 
-	entries, err := os.ReadDir(outDir)
-	if err != nil {
-		t.Fatalf("reading outDir: %v", err)
-	}
-
 	htmlFiles := map[string]string{}
-	for _, e := range entries {
-		if !e.IsDir() && strings.HasSuffix(e.Name(), ".html") {
-			raw, err := os.ReadFile(filepath.Join(outDir, e.Name()))
-			if err != nil {
-				t.Fatalf("reading %s: %v", e.Name(), err)
-			}
-			htmlFiles[e.Name()] = string(raw)
+	if err := filepath.WalkDir(outDir, func(path string, d os.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
 		}
+		if d.IsDir() || !strings.HasSuffix(d.Name(), ".html") {
+			return nil
+		}
+		relPath, err := filepath.Rel(outDir, path)
+		if err != nil {
+			return err
+		}
+		raw, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		htmlFiles[filepath.ToSlash(relPath)] = string(raw)
+		return nil
+	}); err != nil {
+		t.Fatalf("walking outDir: %v", err)
 	}
 	if len(htmlFiles) == 0 {
 		t.Fatal("no .html files generated")
@@ -136,26 +142,36 @@ func TestLinkAndAssetIntegrity(t *testing.T) {
 			t.Errorf("%s: %s=%q must not start with '/'", sourceFile, attr, ref)
 			return
 		}
-		if strings.Contains(ref, "..") {
-			t.Errorf("%s: %s=%q must not contain '..'", sourceFile, attr, ref)
-			return
-		}
 
 		pathPart, frag, hasFrag := strings.Cut(ref, "#")
-		targetPath := filepath.Join(outDir, filepath.FromSlash(pathPart))
-		info, err := os.Stat(targetPath)
-		if err != nil || info.IsDir() {
-			t.Errorf("%s: %s=%q points to missing file %q", sourceFile, attr, ref, pathPart)
+		sourceDir := filepath.Dir(filepath.FromSlash(sourceFile))
+		targetPath := filepath.Clean(filepath.Join(outDir, sourceDir, filepath.FromSlash(pathPart)))
+		relToOut, err := filepath.Rel(outDir, targetPath)
+		if err != nil || strings.HasPrefix(relToOut, "..") {
+			t.Errorf("%s: %s=%q escapes output directory", sourceFile, attr, ref)
 			return
 		}
+		info, err := os.Stat(targetPath)
+		if err != nil {
+			t.Errorf("%s: %s=%q points to missing file %q", sourceFile, attr, ref, relToOut)
+			return
+		}
+		if info.IsDir() {
+			indexPath := filepath.Join(targetPath, "index.html")
+			if _, err := os.Stat(indexPath); err != nil {
+				t.Errorf("%s: %s=%q directory missing index.html", sourceFile, attr, ref)
+				return
+			}
+			relToOut = filepath.Join(relToOut, "index.html")
+		}
 		if hasFrag && frag != "" {
-			targetIDs, ok := idsByFile[filepath.ToSlash(pathPart)]
+			targetIDs, ok := idsByFile[filepath.ToSlash(relToOut)]
 			if !ok {
 				t.Errorf("%s: %s=%q references fragment #%s on non-HTML target", sourceFile, attr, ref, frag)
 				return
 			}
 			if !targetIDs[frag] {
-				t.Errorf("%s: %s=%q references missing id %q in %s", sourceFile, attr, ref, frag, pathPart)
+				t.Errorf("%s: %s=%q references missing id %q in %s", sourceFile, attr, ref, frag, relToOut)
 			}
 		}
 	}

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="{{.Site.Lang}}">
+{{template "head" .}}
+<body data-github-user="{{.Site.GitHub.Username}}" data-github-repo="{{.Site.GitHub.Repo}}" data-timezone="{{.About.Location.Timezone}}">
+{{template "header" .}}
+
+    <div class="scroll-fade-wrapper">
+        <div class="container main-content">
+            <article class="post-article">
+                <a href="{{rel .Root .Posts.PostPage.BackHref}}" class="back-link">{{.Posts.PostPage.BackLabel}}</a>
+                <h1>{{.Post.Title}}</h1>
+                <div class="post-body">
+                    {{.Post.Body}}
+                </div>
+            </article>
+        </div>
+
+{{template "footer" .}}
+    </div>
+
+    <script src="{{rel .Root "script.js"}}"></script>
+</body>
+</html>

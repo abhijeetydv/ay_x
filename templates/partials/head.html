@@ -6,8 +6,8 @@
     <meta name="description" content="{{.PageDescription}}">
     <link rel="canonical" href="{{.CanonicalURL}}">
     {{if .Site.ThemeColor}}<meta name="theme-color" content="{{.Site.ThemeColor}}">{{end}}
-    <link rel="icon"{{if .FaviconType}} type="{{.FaviconType}}"{{end}} href="{{.Site.Favicon}}">
-    <meta property="og:type" content="website">
+    <link rel="icon"{{if .FaviconType}} type="{{.FaviconType}}"{{end}} href="{{rel .Root .Site.Favicon}}">
+    <meta property="og:type" content="{{if .OGType}}{{.OGType}}{{else}}website{{end}}">
     <meta property="og:site_name" content="{{.Site.Name}}">
     <meta property="og:title" content="{{if .PageTitle}}{{.PageTitle}}{{else}}{{.Site.Title}}{{end}}">
     <meta property="og:description" content="{{.PageDescription}}">
@@ -20,7 +20,7 @@
     <meta name="twitter:description" content="{{.PageDescription}}">
     <meta name="twitter:image" content="{{.OGImageURL}}">
     <meta name="twitter:image:alt" content="{{.Site.OGImageAlt}}">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="{{rel .Root "styles.css"}}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,300..700;1,300..700&family=JetBrains+Mono:wght@300;400;500;600;700&family=Titillium+Web:ital,wght@0,200;0,300;0,400;0,600;0,700;0,900;1,200;1,300;1,400;1,600;1,700&display=swap" rel="stylesheet">
