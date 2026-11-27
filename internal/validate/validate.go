@@ -49,7 +49,6 @@ func Homepage(data *model.HomepageData) error {
 	validateAbout(&data.About, &errs)
 	validateAboutPage(&data.AboutPage, &errs)
 	validatePosts(&data.Posts, data.SortedPosts, &errs)
-	validateContact(&data.Contact, &errs)
 	validateFooter(&data.Footer, &errs)
 
 	if len(errs) > 0 {
@@ -128,7 +127,7 @@ func validateSite(s *model.SiteConfig, errs *[]string) {
 	if s.Nav.LogoHref != "" && !isSafeHref(s.Nav.LogoHref) {
 		*errs = append(*errs, fmt.Sprintf("site.yaml: invalid nav.logo_href %q", s.Nav.LogoHref))
 	}
-	for _, requiredKey := range []string{"home", "about", "projects", "posts", "contact"} {
+	for _, requiredKey := range []string{"home", "about", "projects", "posts"} {
 		if _, ok := s.Nav.PagePaths[requiredKey]; !ok {
 			*errs = append(*errs, fmt.Sprintf("site.yaml: nav.page_paths.%s is required", requiredKey))
 		}
@@ -142,6 +141,7 @@ func validateSite(s *model.SiteConfig, errs *[]string) {
 			*errs = append(*errs, fmt.Sprintf("site.yaml: nav.page_paths.%s %q must not contain '/' or whitespace", key, seg))
 		}
 	}
+	hasNewTab := false
 	for i, l := range s.Nav.Links {
 		if strings.TrimSpace(l.Label) == "" {
 			*errs = append(*errs, fmt.Sprintf("site.yaml: nav.links[%d].label is required", i))
@@ -149,6 +149,17 @@ func validateSite(s *model.SiteConfig, errs *[]string) {
 		if !isSafeHref(l.Href) {
 			*errs = append(*errs, fmt.Sprintf("site.yaml: nav.links[%d].href %q is invalid", i, l.Href))
 		}
+		if strings.HasPrefix(l.Href, "assets/") {
+			if err := validateAssetImage(l.Href); err != nil {
+				*errs = append(*errs, fmt.Sprintf("site.yaml: nav.links[%d].href: %v", i, err))
+			}
+		}
+		if l.NewTab {
+			hasNewTab = true
+		}
+	}
+	if hasNewTab && strings.TrimSpace(s.Nav.NewTabLabel) == "" {
+		*errs = append(*errs, "site.yaml: nav.new_tab_label is required when any nav link has new_tab: true")
 	}
 	seenSections := map[string]bool{}
 	for i, sec := range s.Sections {
@@ -478,45 +489,6 @@ func validatePosts(p *model.PostsConfig, postItems []model.Post, errs *[]string)
 				}
 				spans = append(spans, span{start: start, end: end, idx: j})
 			}
-		}
-	}
-}
-
-func validateContact(c *model.ContactConfig, errs *[]string) {
-	if strings.TrimSpace(c.Page.Title) == "" {
-		*errs = append(*errs, "contact.yaml: page.title is required")
-	}
-	validateDescription("contact.yaml: page.description", c.Page.Description, errs)
-	if strings.TrimSpace(c.Page.Heading) == "" {
-		*errs = append(*errs, "contact.yaml: page.heading is required")
-	}
-	if strings.TrimSpace(c.Page.Intro) == "" {
-		*errs = append(*errs, "contact.yaml: page.intro is required")
-	}
-	if strings.TrimSpace(c.Page.BackLabel) == "" {
-		*errs = append(*errs, "contact.yaml: page.back_label is required")
-	}
-	if !isSafeHref(c.Page.BackHref) {
-		*errs = append(*errs, fmt.Sprintf("contact.yaml: page.back_href %q is invalid", c.Page.BackHref))
-	}
-	if strings.TrimSpace(c.Email.Label) == "" {
-		*errs = append(*errs, "contact.yaml: email.label is required")
-	}
-	if !isValidEmail(c.Email.Address) {
-		*errs = append(*errs, fmt.Sprintf("contact.yaml: email.address %q is invalid", c.Email.Address))
-	}
-	if strings.TrimSpace(c.Email.LinkText) == "" {
-		*errs = append(*errs, "contact.yaml: email.link_text is required")
-	}
-	if strings.TrimSpace(c.SocialHeading) == "" {
-		*errs = append(*errs, "contact.yaml: social_heading is required")
-	}
-	for i, ch := range c.Channels {
-		if strings.TrimSpace(ch.Label) == "" || strings.TrimSpace(ch.Value) == "" {
-			*errs = append(*errs, fmt.Sprintf("contact.yaml: channels[%d] requires label and value", i))
-		}
-		if ch.Href != "" && !isSafeHref(ch.Href) {
-			*errs = append(*errs, fmt.Sprintf("contact.yaml: channels[%d].href %q is invalid", i, ch.Href))
 		}
 	}
 }

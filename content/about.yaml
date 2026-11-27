@@ -2,7 +2,7 @@ connect:
   title: "Let's Connect"
   description: "Always open to interesting projects and conversations."
   cta_label: "Send an Email"
-  cta_href: "contact.html"
+  cta_href: "mailto:abhijeet@example.com"
 
 location:
   title: "Currently Based In"

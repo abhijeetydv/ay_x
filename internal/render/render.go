@@ -80,14 +80,6 @@ func DefaultPages() []PageSpec {
 			Title:         func(d *model.HomepageData) string { return d.Posts.Page.Title },
 			Description:   func(d *model.HomepageData) string { return d.Posts.Page.Description },
 		},
-		{
-			Key:           "contact",
-			Template:      "contact.html",
-			Output:        "contact.html",
-			CanonicalPath: "contact.html",
-			Title:         func(d *model.HomepageData) string { return d.Contact.Page.Title },
-			Description:   func(d *model.HomepageData) string { return d.Contact.Page.Description },
-		},
 	}
 }
 

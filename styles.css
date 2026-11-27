@@ -214,7 +214,8 @@ a {
     color: var(--text-secondary);
     transition: color 0.2s ease;
     position: relative;
-    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 .nav-link:hover {
@@ -1040,62 +1041,6 @@ a {
     color: var(--text-secondary);
 }
 
-/* --- Contact Page --- */
-.contact-page-section {
-    padding: 12px 0 48px;
-}
-
-.contact-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 24px;
-    align-items: start;
-}
-
-.contact-email-link {
-    display: inline-block;
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--accent);
-    margin-bottom: 18px;
-    transition: color 0.2s ease;
-    word-break: break-word;
-}
-
-.contact-email-link:hover {
-    color: var(--accent-hover);
-}
-
-.contact-channels {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding-top: 14px;
-    border-top: 1px solid var(--border);
-}
-
-.contact-channel dt {
-    font-size: 0.72rem;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.6px;
-}
-
-.contact-channel dd {
-    font-size: 0.85rem;
-    color: var(--text-secondary);
-}
-
-.contact-social-list {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-}
-
-.contact-social-link {
-    font-size: 0.88rem;
-}
-
 /* --- About Page --- */
 .about-section {
     padding: 8px 0 48px;
@@ -1672,8 +1617,7 @@ a {
         font-size: 0.78rem;
     }
 
-    .projects-grid,
-    .contact-grid {
+    .projects-grid {
         grid-template-columns: 1fr;
     }
 

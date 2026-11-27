@@ -23,17 +23,19 @@ var AllowedTitleColors = []string{
 
 // Link represents a labeled hyperlink.
 type Link struct {
-	Label string `yaml:"label"`
-	Href  string `yaml:"href"`
-	Page  string `yaml:"page,omitempty"`
+	Label  string `yaml:"label"`
+	Href   string `yaml:"href"`
+	Page   string `yaml:"page,omitempty"`
+	NewTab bool   `yaml:"new_tab,omitempty"`
 }
 
 // NavConfig holds navbar brand and link items.
 type NavConfig struct {
-	Logo      string            `yaml:"logo"`
-	LogoHref  string            `yaml:"logo_href"`
-	PagePaths map[string]string `yaml:"page_paths"`
-	Links     []Link            `yaml:"links"`
+	Logo        string            `yaml:"logo"`
+	LogoHref    string            `yaml:"logo_href"`
+	NewTabLabel string            `yaml:"new_tab_label,omitempty"`
+	PagePaths   map[string]string `yaml:"page_paths"`
+	Links       []Link            `yaml:"links"`
 }
 
 // SectionConfig controls homepage section visibility and ordering.
@@ -332,38 +334,6 @@ type AboutPageConfig struct {
 	ProjectsHref  string     `yaml:"projects_href"`
 }
 
-// ContactPageConfig configures contact.html metadata and copy.
-type ContactPageConfig struct {
-	Title       string `yaml:"title"`
-	Description string `yaml:"description"`
-	Heading     string `yaml:"heading"`
-	Intro       string `yaml:"intro"`
-	BackLabel   string `yaml:"back_label"`
-	BackHref    string `yaml:"back_href"`
-}
-
-// ContactEmailConfig configures the direct email block on contact.html.
-type ContactEmailConfig struct {
-	Label    string `yaml:"label"`
-	Address  string `yaml:"address"`
-	LinkText string `yaml:"link_text"`
-}
-
-// ContactChannel represents an extra contact detail row.
-type ContactChannel struct {
-	Label string `yaml:"label"`
-	Value string `yaml:"value"`
-	Href  string `yaml:"href,omitempty"`
-}
-
-// ContactConfig represents content/contact.yaml.
-type ContactConfig struct {
-	Page          ContactPageConfig  `yaml:"page"`
-	Email         ContactEmailConfig `yaml:"email"`
-	SocialHeading string             `yaml:"social_heading"`
-	Channels      []ContactChannel   `yaml:"channels,omitempty"`
-}
-
 // HomepageData aggregates all validated YAML content for template rendering.
 type HomepageData struct {
 	Site             SiteConfig
@@ -379,7 +349,6 @@ type HomepageData struct {
 	Posts            PostsConfig
 	SortedPosts      []Post
 	LatestPost       *Post
-	Contact          ContactConfig
 	Footer           FooterConfig
 	OrderedSections  []string
 }

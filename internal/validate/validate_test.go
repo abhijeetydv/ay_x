@@ -118,17 +118,6 @@ func TestDuplicatePostSlugRejected(t *testing.T) {
 	}
 }
 
-func TestInvalidContactEmailRejected(t *testing.T) {
-	data, err := loader.LoadAll("testdata/valid")
-	if err != nil {
-		t.Fatalf("LoadAll failed: %v", err)
-	}
-	data.Contact.Email.Address = "not-an-email"
-	if err := validate.Homepage(data); err == nil {
-		t.Fatal("expected validation error for invalid contact email, got nil")
-	}
-}
-
 func TestAllowedTitleColorsMatchCSS(t *testing.T) {
 	raw, err := os.ReadFile(filepath.Join("..", "..", "styles.css"))
 	if err != nil {

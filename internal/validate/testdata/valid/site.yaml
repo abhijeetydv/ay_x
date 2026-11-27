@@ -12,12 +12,12 @@ theme_color: "#000000"
 nav:
   logo: "~/"
   logo_href: "index.html"
+  new_tab_label: "opens in a new tab"
   page_paths:
     home: ""
     about: "about"
     projects: "projects"
     posts: "posts"
-    contact: "contact"
   links:
     - label: "About"
       href: "about.html"
@@ -28,9 +28,9 @@ nav:
     - label: "Posts"
       href: "posts.html"
       page: "posts"
-    - label: "Contact"
-      href: "contact.html"
-      page: "contact"
+    - label: "Resume"
+      href: "assets/resume.pdf"
+      new_tab: true
 
 sections:
   - key: "hero"

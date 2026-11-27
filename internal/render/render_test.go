@@ -27,12 +27,10 @@ func TestBuildSite(t *testing.T) {
 	const aboutMarker = "ZZMARK_RENDER_TEST_ABOUT_PARAGRAPH"
 	const projectsMarker = "ZZMARK_RENDER_TEST_PROJECTS_HEADING"
 	const postsMarker = "ZZMARK_RENDER_TEST_POSTS_HEADING"
-	const contactMarker = "ZZMARK_RENDER_TEST_CONTACT_HEADING"
 	data.Hero.Greeting = marker
 	data.AboutPage.Paragraphs = append(data.AboutPage.Paragraphs, aboutMarker)
 	data.Projects.Page.Heading = projectsMarker
 	data.Posts.Page.Heading = postsMarker
-	data.Contact.Page.Heading = contactMarker
 
 	outDir := t.TempDir()
 	templateDir := filepath.Join("..", "..", "templates")
@@ -41,7 +39,7 @@ func TestBuildSite(t *testing.T) {
 		t.Fatalf("BuildSite failed: %v", err)
 	}
 
-	for _, name := range []string{"index.html", "about.html", "projects.html", "posts.html", "contact.html", "styles.css", "script.js"} {
+	for _, name := range []string{"index.html", "about.html", "projects.html", "posts.html", "styles.css", "script.js"} {
 		if _, err := os.Stat(filepath.Join(outDir, name)); err != nil {
 			t.Fatalf("expected output file %s: %v", name, err)
 		}
@@ -52,7 +50,6 @@ func TestBuildSite(t *testing.T) {
 		"about.html":    aboutMarker,
 		"projects.html": projectsMarker,
 		"posts.html":    postsMarker,
-		"contact.html":  contactMarker,
 	}
 	for _, page := range render.SitePages(data) {
 		raw, err := os.ReadFile(filepath.Join(outDir, filepath.FromSlash(page.Output)))
@@ -443,9 +440,9 @@ func TestHomeConnectAndPostsLinks(t *testing.T) {
 		t.Fatalf("reading index.html: %v", err)
 	}
 
-	connectRe := regexp.MustCompile(`<a href="contact\.html" class="connect-btn">\s*` + regexp.QuoteMeta(data.About.Connect.CTALabel) + `\s*</a>`)
+	connectRe := regexp.MustCompile(`<a href="` + regexp.QuoteMeta(data.About.Connect.CTAHref) + `" class="connect-btn">\s*` + regexp.QuoteMeta(data.About.Connect.CTALabel) + `\s*</a>`)
 	if !connectRe.Match(raw) {
-		t.Errorf("index.html missing connect-btn link to contact.html with label %q", data.About.Connect.CTALabel)
+		t.Errorf("index.html missing connect-btn link to %s with label %q", data.About.Connect.CTAHref, data.About.Connect.CTALabel)
 	}
 	postsRe := regexp.MustCompile(`<a href="posts\.html" class="posts-external">\s*` + regexp.QuoteMeta(data.Posts.HomeTile.AllPostsLabel) + `\s*</a>`)
 	if !postsRe.Match(raw) {
@@ -494,32 +491,6 @@ func TestPostsSortingAndEmptyState(t *testing.T) {
 		if !strings.Contains(string(raw), data.Posts.Page.EmptyMessage) {
 			t.Errorf("%s: missing empty_message %q", fn, data.Posts.Page.EmptyMessage)
 		}
-	}
-}
-
-func TestContactMailtoHref(t *testing.T) {
-	data, err := loader.LoadAll(filepath.Join("..", "validate", "testdata", "valid"))
-	if err != nil {
-		t.Fatalf("LoadAll fixture failed: %v", err)
-	}
-	if err := validate.Homepage(data); err != nil {
-		t.Fatalf("validate.Homepage failed: %v", err)
-	}
-
-	outDir := t.TempDir()
-	templateDir := filepath.Join("..", "..", "templates")
-	rootDir := filepath.Join("..", "..")
-	if err := render.BuildSite(templateDir, rootDir, outDir, data); err != nil {
-		t.Fatalf("BuildSite failed: %v", err)
-	}
-
-	raw, err := os.ReadFile(filepath.Join(outDir, "contact.html"))
-	if err != nil {
-		t.Fatalf("reading contact.html: %v", err)
-	}
-	wantHref := `href="mailto:` + data.Contact.Email.Address + `"`
-	if !strings.Contains(string(raw), wantHref) {
-		t.Errorf("contact.html missing %s", wantHref)
 	}
 }
 
