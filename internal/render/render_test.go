@@ -625,3 +625,78 @@ func TestPostPagesEndToEnd(t *testing.T) {
 		t.Fatalf("older-fixture-post/index.html leaked raw <script> tag")
 	}
 }
+
+func TestPostTOCAndDividerFreeLayout(t *testing.T) {
+	data, err := loader.LoadAll(filepath.Join("..", "validate", "testdata", "valid"))
+	if err != nil {
+		t.Fatalf("LoadAll fixture failed: %v", err)
+	}
+	if err := validate.Homepage(data); err != nil {
+		t.Fatalf("validate.Homepage failed: %v", err)
+	}
+
+	outDir := t.TempDir()
+	templateDir := filepath.Join("..", "..", "templates")
+	rootDir := filepath.Join("..", "..")
+	if err := render.BuildSite(templateDir, rootDir, outDir, data); err != nil {
+		t.Fatalf("BuildSite failed: %v", err)
+	}
+
+	// Post with >= toc_min_items headings has nav.toc with nested items in order.
+	newestRaw, err := os.ReadFile(filepath.Join(outDir, "posts", "newest-fixture-post", "index.html"))
+	if err != nil {
+		t.Fatalf("reading newest-fixture-post: %v", err)
+	}
+	newestHTML := string(newestRaw)
+	if count := strings.Count(newestHTML, `<nav class="toc"`); count != 1 {
+		t.Fatalf("expected 1 nav.toc on newest-fixture-post, got %d", count)
+	}
+	if !strings.Contains(newestHTML, `aria-label="`+data.Posts.PostPage.ContentsAriaLabel+`"`) ||
+		!strings.Contains(newestHTML, `<p class="toc-label">`+data.Posts.PostPage.ContentsLabel+`</p>`) {
+		t.Errorf("newest-fixture-post missing configured TOC aria-label or label")
+	}
+	if !strings.Contains(newestHTML, `<ol class="toc-sublist">`) {
+		t.Errorf("newest-fixture-post missing nested .toc-sublist")
+	}
+	i1 := strings.Index(newestHTML, `href="#heading-one"`)
+	i2 := strings.Index(newestHTML, `href="#sub-heading"`)
+	i3 := strings.Index(newestHTML, `href="#heading-two"`)
+	if i1 == -1 || i2 == -1 || i3 == -1 || !(i1 < i2 && i2 < i3) {
+		t.Errorf("TOC links missing or out of order: %d, %d, %d", i1, i2, i3)
+	}
+	for _, id := range []string{"heading-one", "sub-heading", "heading-two"} {
+		if !strings.Contains(newestHTML, `id="`+id+`"`) {
+			t.Errorf("newest-fixture-post missing heading id %q", id)
+		}
+	}
+	if strings.Contains(newestHTML, "<hr") {
+		t.Errorf("newest-fixture-post contains unexpected <hr>")
+	}
+
+	// Post with fewer than toc_min_items headings has no nav.toc.
+	olderRaw, err := os.ReadFile(filepath.Join(outDir, "posts", "older-fixture-post", "index.html"))
+	if err != nil {
+		t.Fatalf("reading older-fixture-post: %v", err)
+	}
+	if strings.Contains(string(olderRaw), `class="toc"`) {
+		t.Errorf("older-fixture-post should not render nav.toc")
+	}
+	if strings.Contains(string(olderRaw), "<hr") {
+		t.Errorf("older-fixture-post contains unexpected <hr>")
+	}
+
+	// Check CSS rules for .post-header, .toc, .post-article, .post-layout contain no border-top/border-bottom.
+	cssRaw, err := os.ReadFile(filepath.Join("..", "..", "styles.css"))
+	if err != nil {
+		t.Fatalf("reading styles.css: %v", err)
+	}
+	css := string(cssRaw)
+	for _, sel := range []string{".post-article", ".post-header", ".post-layout.has-toc", ".toc"} {
+		ruleRe := regexp.MustCompile(`(?m)^` + regexp.QuoteMeta(sel) + `\s*\{([^}]*)\}`)
+		for _, m := range ruleRe.FindAllStringSubmatch(css, -1) {
+			if strings.Contains(m[1], "border-top") || strings.Contains(m[1], "border-bottom") {
+				t.Errorf("CSS rule %s must not contain border-top or border-bottom", sel)
+			}
+		}
+	}
+}
