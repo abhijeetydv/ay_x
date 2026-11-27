@@ -1873,6 +1873,11 @@ a {
     .footer-socials[data-dock-state="floating"] .dock-link:focus-visible .dock-bubble {
         transform: translateY(-50%) translateX(0);
     }
+
+    .dock-socket.is-landed {
+        box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35), 0 0 14px rgba(255, 255, 255, 0.2);
+        transition: box-shadow 350ms ease;
+    }
 }
 
 /* --- Responsive --- */

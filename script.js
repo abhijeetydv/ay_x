@@ -764,13 +764,77 @@ function decideDockState(currentState, visibleFooterPx) {
     return currentState || 'floating';
 }
 
+function computeBezierPoint(p0, p1, p2, t) {
+    const u = 1 - t;
+    return {
+        x: (u * u * p0.x) + (2 * u * t * p1.x) + (t * t * p2.x),
+        y: (u * u * p0.y) + (2 * u * t * p1.y) + (t * t * p2.y),
+    };
+}
+
+function computeDockDelay(index, count, staggerMs) {
+    return Math.max(0, (count - 1 - index) * staggerMs);
+}
+
+function buildDockKeyframes({ dx, dy, direction, popScale = 1.12, steps = 12 }) {
+    const p0 = { x: dx, y: dy };
+    const p1 = direction === 'dock' ? { x: dx, y: 0 } : { x: 0, y: dy };
+    const p2 = { x: 0, y: 0 };
+    const keyframes = [];
+
+    for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        const pt = computeBezierPoint(p0, p1, p2, t);
+        let scale = 1;
+        if (direction === 'dock' && t >= 0.9 && t < 1) {
+            scale = popScale;
+        }
+        keyframes.push({
+            offset: t,
+            transform: `translate(${pt.x.toFixed(2)}px, ${pt.y.toFixed(2)}px) scale(${scale})`,
+        });
+    }
+    return keyframes;
+}
+
+function parseCssTimeMs(value, fallbackMs) {
+    if (!value) return fallbackMs;
+    const trimmed = String(value).trim();
+    if (trimmed.endsWith('ms')) {
+        const n = parseFloat(trimmed);
+        return Number.isFinite(n) ? n : fallbackMs;
+    }
+    if (trimmed.endsWith('s')) {
+        const n = parseFloat(trimmed);
+        return Number.isFinite(n) ? n * 1000 : fallbackMs;
+    }
+    const n = parseFloat(trimmed);
+    return Number.isFinite(n) ? n : fallbackMs;
+}
+
 function initSocialDock() {
     const dock = document.querySelector('.footer-socials');
     const footer = document.querySelector('.footer-panel');
     if (!dock || !footer || typeof window.matchMedia !== 'function') return;
 
     const floatQuery = window.matchMedia(DOCK_FLOAT_MEDIA_QUERY);
+    const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     const scrollContainer = document.querySelector('.scroll-fade-wrapper');
+    const links = Array.from(dock.querySelectorAll('.dock-link'));
+    const activeAnimations = new Map();
+    const landedTimers = new Map();
+
+    function getTuning() {
+        if (typeof getComputedStyle !== 'function') {
+            return { duration: 650, stagger: 70, popScale: 1.12 };
+        }
+        const cs = getComputedStyle(document.documentElement);
+        return {
+            duration: parseCssTimeMs(cs.getPropertyValue('--dock-fly-duration'), 650),
+            stagger: parseCssTimeMs(cs.getPropertyValue('--dock-stagger'), 70),
+            popScale: parseFloat(cs.getPropertyValue('--dock-pop-scale')) || 1.12,
+        };
+    }
 
     function getVisibleFooterPx() {
         const footerRect = footer.getBoundingClientRect();
@@ -780,25 +844,120 @@ function initSocialDock() {
         return viewportBottom - footerRect.top;
     }
 
-    let currentState = null;
-
-    function applyState(nextState) {
-        if (currentState === nextState) return;
-        currentState = nextState;
-        dock.dataset.dockState = nextState;
+    function clearLanded(socket) {
+        if (!socket) return;
+        const timer = landedTimers.get(socket);
+        if (timer) {
+            clearTimeout(timer);
+            landedTimers.delete(socket);
+        }
+        socket.classList.remove('is-landed');
     }
 
-    function syncState() {
+    function markLanded(socket) {
+        if (!socket) return;
+        clearLanded(socket);
+        socket.classList.add('is-landed');
+        const timer = setTimeout(() => {
+            socket.classList.remove('is-landed');
+            landedTimers.delete(socket);
+        }, 350);
+        landedTimers.set(socket, timer);
+    }
+
+    let currentState = null;
+
+    function applyState(nextState, animateTransition) {
+        if (currentState === nextState) return;
+        const prevState = currentState;
+        currentState = nextState;
+
+        if (!animateTransition || !prevState || links.length === 0 || typeof links[0].animate !== 'function') {
+            for (const link of links) {
+                const anim = activeAnimations.get(link);
+                if (anim) {
+                    anim.cancel();
+                    activeAnimations.delete(link);
+                }
+                clearLanded(link.closest ? link.closest('.dock-socket') : null);
+            }
+            dock.dataset.dockState = nextState;
+            return;
+        }
+
+        if (reducedMotionQuery.matches) {
+            dock.dataset.dockState = nextState;
+            for (const link of links) {
+                const anim = activeAnimations.get(link);
+                if (anim) anim.cancel();
+                const fadeAnim = link.animate([{ opacity: 0 }, { opacity: 1 }], {
+                    duration: 150,
+                    easing: 'ease',
+                });
+                activeAnimations.set(link, fadeAnim);
+                fadeAnim.onfinish = () => activeAnimations.delete(link);
+            }
+            return;
+        }
+
+        // First: capture current visual positions (supports mid-flight reversal)
+        const firstRects = links.map((link) => link.getBoundingClientRect());
+
+        for (const link of links) {
+            const anim = activeAnimations.get(link);
+            if (anim) {
+                anim.cancel();
+                activeAnimations.delete(link);
+            }
+            clearLanded(link.closest ? link.closest('.dock-socket') : null);
+        }
+
+        // Flip state
+        dock.dataset.dockState = nextState;
+
+        // Last: capture destination rects
+        const lastRects = links.map((link) => link.getBoundingClientRect());
+        const direction = nextState === 'docked' ? 'dock' : 'undock';
+        const { duration, stagger, popScale } = getTuning();
+
+        links.forEach((link, index) => {
+            const first = firstRects[index];
+            const last = lastRects[index];
+            const dx = first.left - last.left;
+            const dy = first.top - last.top;
+            if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return;
+
+            const keyframes = buildDockKeyframes({ dx, dy, direction, popScale });
+            const delay = computeDockDelay(index, links.length, stagger);
+            const anim = link.animate(keyframes, {
+                duration,
+                delay,
+                easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+                fill: 'backwards',
+            });
+            activeAnimations.set(link, anim);
+            anim.onfinish = () => {
+                if (activeAnimations.get(link) === anim) {
+                    activeAnimations.delete(link);
+                    if (direction === 'dock') {
+                        markLanded(link.closest ? link.closest('.dock-socket') : null);
+                    }
+                }
+            };
+        });
+    }
+
+    function syncState(animateTransition = true) {
         if (!floatQuery.matches) {
-            applyState('docked');
+            applyState('docked', false);
             return;
         }
         const visiblePx = getVisibleFooterPx();
         const nextState = decideDockState(currentState, visiblePx);
-        applyState(nextState);
+        applyState(nextState, animateTransition);
     }
 
-    syncState();
+    syncState(false);
 
     let rafId = 0;
     function scheduleSync() {
@@ -808,7 +967,7 @@ function initSocialDock() {
             : (fn) => setTimeout(fn, 16);
         rafId = schedule(() => {
             rafId = 0;
-            syncState();
+            syncState(true);
         });
     }
 
@@ -816,9 +975,9 @@ function initSocialDock() {
         scrollContainer.addEventListener('scroll', scheduleSync, { passive: true });
     }
     window.addEventListener('scroll', scheduleSync, { passive: true });
-    window.addEventListener('resize', scheduleSync, { passive: true });
+    window.addEventListener('resize', () => syncState(false), { passive: true });
     if (typeof floatQuery.addEventListener === 'function') {
-        floatQuery.addEventListener('change', syncState);
+        floatQuery.addEventListener('change', () => syncState(false));
     }
-    window.addEventListener('pageshow', syncState);
+    window.addEventListener('pageshow', () => syncState(false));
 }
